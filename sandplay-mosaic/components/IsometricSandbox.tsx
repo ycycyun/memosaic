@@ -1,89 +1,131 @@
-
-import React from 'react';
-import { ISO_MATH, ISO_COLS, ISO_ROWS, ISO_GRID_SIZE } from '../constants';
+import React, { useRef, useState, useEffect } from 'react';
+import { ISO_COLS, ISO_ROWS } from '../constants';
 import { SandboxObject } from '../types';
 
 interface IsometricSandboxProps {
   objects: SandboxObject[];
   onDrop: (x: number, y: number) => void;
-  onUpdateObject?: (id: string, x: number, y: number) => void;
   activeThemeColor: string;
+  activeThemeName?: string;
+  activeThemeBaseColor?: string;
 }
 
-const IsometricSandbox: React.FC<IsometricSandboxProps> = ({ objects, onDrop, activeThemeColor }) => {
-  const renderGrid = () => {
-    const cells = [];
-    for (let x = 0; x < ISO_COLS; x++) {
-      for (let y = 0; y < ISO_ROWS; y++) {
-        const pos = ISO_MATH.toIso(x, y);
-        cells.push(
-          <div
-            key={`${x}-${y}`}
-            onClick={() => onDrop(x, y)}
-            className="absolute cursor-pointer group"
-            style={{
-              left: `${50}%`,
-              top: `${20}%`,
-              transform: `translate(${pos.x}px, ${pos.y}px)`,
-              width: `${ISO_GRID_SIZE}px`,
-              height: `${ISO_GRID_SIZE}px`,
-              zIndex: x + y
-            }}
-          >
-            {/* Grid Tile */}
-            <div 
-              className="w-full h-full border border-slate-200/30 group-hover:bg-white/40 transition-colors"
-              style={{
-                transform: 'rotateX(60deg) rotateZ(45deg)',
-                backgroundColor: activeThemeColor + '20'
-              }}
-            />
-          </div>
-        );
-      }
-    }
-    return cells;
+const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
+  objects,
+  onDrop,
+  activeThemeColor,
+}) => {
+  const surfaceRef = useRef<HTMLDivElement>(null);
+
+  // We use percentages for the grid to ensure it perfectly fills the parent container
+  const cellWidth = 100 / ISO_COLS;
+  const cellHeight = 100 / ISO_ROWS;
+
+  const tray = {
+    frame: '#e8e6e3',
+    surface: '#f5f3f0',
+    border: '#d4cfc9'
   };
 
-  return (
-    <div className="relative w-full h-[600px] bg-white/5 rounded-3xl overflow-hidden isometric-container border border-slate-200/50 shadow-inner">
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,_transparent_0%,_rgba(0,0,0,0.02)_100%)]" />
-      
-      {/* Grid */}
-      <div className="relative h-full w-full">
-        {renderGrid()}
+  const surfaceGradient = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), rgba(255,255,255,0) 60%)`;
+  const noiseLayer = `repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.02) 2px, rgba(0,0,0,0.02) 4px)`;
 
-        {/* Objects */}
-        {objects.map((obj) => {
-          const pos = ISO_MATH.toIso(obj.x, obj.y);
-          return (
-            <div
-              key={obj.id}
-              className="absolute pointer-events-none transition-all duration-300"
-              style={{
-                left: `calc(50% + ${pos.x}px)`,
-                top: `calc(20% + ${pos.y}px)`,
-                width: `${ISO_GRID_SIZE}px`,
-                height: `${ISO_GRID_SIZE}px`,
-                zIndex: obj.x + obj.y + 10,
-                transform: `translate(0, -20px)`
-              }}
-            >
-              <div className="flex flex-col items-center justify-end h-full">
-                {obj.imageUrl ? (
-                  <img src={obj.imageUrl} alt={obj.name} className="w-12 h-12 object-contain drop-shadow-lg" />
-                ) : (
-                  <div className="text-slate-700 bg-white/80 p-2 rounded-lg shadow-lg border border-slate-100 flex items-center justify-center">
-                    {/* Since icon is JSX, we just render it */}
-                    {React.isValidElement(obj.icon) ? obj.icon : <span>{obj.name}</span>}
+  return (
+    <div className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
+      {/* 1. Perspective Container */}
+      <div style={{ perspective: '1200px' }}>
+        
+        {/* 2. The Main Tray (Rotated in 3D Space) */}
+        <div
+          className="relative transition-transform duration-700 ease-out shadow-2xl"
+          style={{
+            transform: 'rotateX(55deg) rotateZ(-45deg)',
+            transformStyle: 'preserve-3d',
+            width: '32rem',
+            height: '32rem',
+            backgroundColor: tray.frame,
+            borderRadius: '8px',
+            borderBottom: '12px solid rgba(0,0,0,0.2)',
+            borderRight: '12px solid rgba(0,0,0,0.1)',
+          }}
+        >
+          {/* 3. The Inner Sand Surface */}
+          <div
+            ref={surfaceRef}
+            className="absolute inset-2 overflow-visible"
+            style={{
+              backgroundColor: tray.surface,
+              border: `4px solid ${tray.border}`,
+              backgroundImage: `${surfaceGradient}, ${noiseLayer}`,
+              boxShadow: 'inset 0 0 40px rgba(0,0,0,0.2)',
+            }}
+          >
+            {/* 4. The Grid Overlay */}
+            <div className="relative w-full h-full">
+              {Array.from({ length: ISO_COLS }).map((_, x) =>
+                Array.from({ length: ISO_ROWS }).map((_, y) => (
+                  <div
+                    key={`${x}-${y}`}
+                    onClick={() => onDrop(x, y)}
+                    className="absolute border border-black/5 hover:bg-white/30 cursor-pointer transition-colors"
+                    style={{
+                      left: `${x * cellWidth}%`,
+                      top: `${y * cellHeight}%`,
+                      width: `${cellWidth}%`,
+                      height: `${cellHeight}%`,
+                      backgroundColor: activeThemeColor + '15',
+                    }}
+                  />
+                ))
+              )}
+
+              {/* 5. The Objects */}
+              {objects.map((obj) => (
+                <div
+                  key={obj.id}
+                  className="absolute pointer-events-none"
+                  style={{
+                    // Position at the center of the target tile
+                    left: `${obj.x * cellWidth + cellWidth / 2}%`,
+                    top: `${obj.y * cellHeight + cellHeight / 2}%`,
+                    width: '0px',
+                    height: '0px',
+                    zIndex: obj.x + obj.y + 10,
+                  }}
+                >
+                  <div 
+                    className="flex flex-col items-center justify-end"
+                    style={{
+                      width: '120px', 
+                      height: '120px',
+                      marginLeft: '-60px', // Center the object container
+                      marginTop: '-100px', // Lift it so the base sits on the grid
+                      /* IMPORTANT: Counter-rotate the object so it stays upright 
+                         while the floor stays tilted.
+                      */
+                      transform: 'rotateZ(45deg) rotateX(-55deg) scale(1.5)',
+                      transformOrigin: 'bottom center',
+                    }}
+                  >
+                    {obj.imageUrl ? (
+                      <img
+                        src={obj.imageUrl}
+                        alt={obj.name}
+                        className="w-full h-auto object-contain drop-shadow-xl"
+                      />
+                    ) : (
+                      <div className="bg-white/90 p-2 rounded shadow-lg border text-xs">
+                        {obj.name}
+                      </div>
+                    )}
+                    {/* Shadow on the sand */}
+                    <div className="w-12 h-4 bg-black/20 blur-md rounded-[100%] absolute -bottom-2" />
                   </div>
-                )}
-                {/* Shadow */}
-                <div className="w-8 h-2 bg-black/10 blur-sm rounded-full -mb-1" />
-              </div>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        </div>
       </div>
     </div>
   );
