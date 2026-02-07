@@ -21,7 +21,7 @@ type ProfileViewProps = {
 
 export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox, username }) => {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     // Ensure persistence.getAllSessions sends the correct userId
@@ -32,17 +32,22 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
   }, [username]);
 
   const handleCubeClick = (id: string) => {
-    if (selectedId === id) {
-      setSelectedId(null);
-    } else {
-      setSelectedId(id);
-    }
+    setFlippedIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        return next;
+    });
   };
 
   const handleClearHistory = () => {
     if (confirm('Are you sure you want to delete all your memory history? This cannot be undone.')) {
       persistence.clearHistory();
       setSessions([]);
+      setFlippedIds(new Set());
     }
   };
 
@@ -52,7 +57,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
       const updatedSessions = sessions.filter(session => session.id !== id);
       setSessions(updatedSessions);
       localStorage.setItem('sandplay_sessions', JSON.stringify(updatedSessions));
-      setSelectedId(null);
+      setFlippedIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+      });
     }
   };
 
@@ -118,7 +127,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
                 {/* Memory cubes in flex mosaic layout */}
                 <div className="flex flex-wrap justify-center gap-1 pb-1">
                   {shelf.map((session, cubeIndex) => {
-                    const isSelected = selectedId === session.id;
+                    const isSelected = flippedIds.has(session.id);
                     const delay = cubeIndex * 0.05;
                     
                     return (
