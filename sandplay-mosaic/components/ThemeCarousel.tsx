@@ -6,6 +6,10 @@ import DesertImg from '../assets/Desert.PNG';
 import ForestImg from '../assets/Forest.PNG';
 import SeaImg from '../assets/Sea.PNG';
 import UrbanImg from '../assets/Urban.PNG';
+import DesertBg from '../background/desert.mp4';
+import ForestBg from '../background/forest.mp4';
+import SeaBg from '../background/sea.mp4';
+import UrbanBg from '../background/urban.mp4';
 
 interface ThemeCarouselProps {
   onSelectTheme: (theme: AssetTheme) => void;
@@ -50,8 +54,35 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
     }
   };
 
+  const getBackgroundVideo = (themeName: string) => {
+    switch (themeName) {
+      case 'Desert':
+        return DesertBg;
+      case 'Forest':
+        return ForestBg;
+      case 'Sea':
+        return SeaBg;
+      case 'Urban':
+        return UrbanBg;
+      default:
+        return UrbanBg;
+    }
+  };
+
   return (
-    <div className="flex flex-col items-center gap-12 w-full">
+    <div className="relative w-full min-h-screen flex flex-col items-center pt-20">
+      {/* Background Video */}
+      <video
+        key={centerTheme.name}
+        autoPlay
+        muted
+        loop
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover -z-10"
+      >
+        <source src={getBackgroundVideo(centerTheme.name)} type="video/mp4" />
+      </video>
+
       {/* Carousel Container */}
       <div className="relative w-full max-w-4xl mx-auto">
         <div className="flex items-center justify-between gap-4">
@@ -74,7 +105,7 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
             </div>
 
             {/* Center Theme - Main */}
-            <div className="flex flex-col items-center gap-4 flex-shrink-0">
+            <div className="flex flex-col items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => onSelectTheme(centerTheme.name as AssetTheme)}
                 className="group relative"
@@ -108,7 +139,7 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
         </div>
 
         {/* Indicators */}
-        <div className="flex justify-center gap-2 mt-8">
+        <div className="flex justify-center gap-2 mt-4">
           {THEMES.map((_, index) => (
             <button
               key={index}

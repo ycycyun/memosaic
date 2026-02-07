@@ -224,7 +224,7 @@ const App: React.FC = () => {
   const currentThemeData = THEMES.find(t => t.name === selectedTheme);
 
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING || gameState === AppState.GROUNDING ? currentThemeData?.color : '#ffffff' }}>
+    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING ? currentThemeData?.color : gameState === AppState.GROUNDING ? 'transparent' : '#ffffff' }}>
       
       <header className="px-8 py-6 flex justify-between items-center bg-white/30 backdrop-blur-sm border-b border-white/40 sticky top-0 z-50">
         <button 
@@ -306,7 +306,7 @@ const App: React.FC = () => {
         )}
 
         {gameState === AppState.GROUNDING && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full">
+          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full bg-transparent">
             <span className="text-slate-500 uppercase tracking-widest text-xs font-semibold mb-4">Phase I: Grounding</span>
             <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {currentUser.username}.</h2>
             <p className="text-slate-600 text-lg mb-12 leading-relaxed italic">
