@@ -1,0 +1,7 @@
+{
+  "name": "Sandplay Mosaic",
+  "description": "A meditative isometric sandplay therapy tool that transforms personal reflections into a collective community mural.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
