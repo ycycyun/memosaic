@@ -64,6 +64,20 @@ const App: React.FC = () => {
     setPendingAsset(null);
   };
 
+  // New handler for updating object positions
+  const handleUpdateObject = (id: string, x: number, y: number) => {
+    setObjects(prevObjects => 
+      prevObjects.map(obj => 
+        obj.id === id ? { ...obj, x, y } : obj
+      )
+    );
+  };
+
+  // New handler for deleting objects
+  const handleDeleteObject = (id: string) => {
+    setObjects(prevObjects => prevObjects.filter(obj => obj.id !== id));
+  };
+
   const handleFinish = async () => {
     if (objects.length === 0) return;
     setIsAnalyzing(true);
@@ -292,7 +306,15 @@ const App: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <IsometricSandbox objects={objects} onDrop={onDrop} activeThemeColor={currentThemeData?.accent || '#000'} />
+              <IsometricSandbox
+                objects={objects}
+                onDrop={onDrop}
+                onUpdateObject={handleUpdateObject}
+                onDeleteObject={handleDeleteObject}
+                activeThemeColor={THEMES.find(t => t.name === selectedTheme)?.accent || '#000'}
+                activeThemeBaseColor={THEMES.find(t => t.name === selectedTheme)?.color || '#fff'}
+                activeThemeName={selectedTheme}
+              />
             </div>
           </div>
         )}

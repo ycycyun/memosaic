@@ -108,14 +108,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
            <p className="text-sm italic uppercase tracking-[0.2em]">No memories saved yet.</p>
         </div>
       ) : (
-        <div className="max-w-7xl mx-auto w-full px-6 flex flex-col gap-16 py-10">
+        <div className="max-w-7xl mx-auto w-full px-6 flex flex-col gap-8 py-10">
           {/* Bookshelf Sections */}
           {chunkArray<SavedSession>(sessions, 8).map((shelf, shelfIndex) => (
             <div key={`shelf-${shelfIndex}`} className="relative">
               {/* Shelf styling - simple and minimal */}
               <div className="relative">
-                {/* Memory cubes in grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6 pb-1">
+                {/* Memory cubes in flex mosaic layout */}
+                <div className="flex flex-wrap justify-center gap-1 pb-1">
                   {shelf.map((session, cubeIndex) => {
                     const isSelected = selectedId === session.id;
                     const delay = cubeIndex * 0.05;
@@ -147,7 +147,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
                           )}
                           {/* Wrapper */}
                           <div
-                            className={`w-full h-full transition-all duration-500 ease-in-out ${isSelected ? 'scale-150' : ''}`}
+                            className={`w-full h-full transition-all duration-500 ease-in-out`}
                             style={{
                               transitionDelay: `${delay}s`,
                               animation: isSelected ? 'none' : 'float 3s infinite ease-in-out'
@@ -229,7 +229,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
 
                           {/* Small shadow */}
                           <div
-                            className={`absolute -bottom-8 left-1/2 -translate-x-1/2 w-12 h-2 bg-black/20 blur-md rounded-full transition-all duration-500 ${isSelected ? 'scale-125 opacity-10' : 'opacity-20'}`}
+                            className={`absolute -bottom-8 left-1/2 -translate-x-1/2 w-12 h-2 bg-black/20 blur-md rounded-full transition-all duration-500 ${isSelected ? 'opacity-10' : 'opacity-20'}`}
                             style={{ transitionDelay: `${delay}s` }}
                           />
                         </div>
