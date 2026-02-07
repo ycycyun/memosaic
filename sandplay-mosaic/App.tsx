@@ -99,16 +99,16 @@ const App: React.FC = () => {
     setIsSessionSaved(false); // Reset saved state for new session
 
     try {
-      const { name, imageUrl } = await generateSummaryItem(objects, selectedTheme);
+      const { name, imageUrl, accent, mood } = await generateSummaryItem(objects, selectedTheme);
       const themeData = THEMES.find(t => t.name === selectedTheme)!;
       
       const newMuralEntry: MuralShard = {
         id: `talisman-${Date.now()}`,
         color: themeData.color,
-        accent: themeData.accent,
+        accent: accent, // Use analyzed emotion color
         itemName: name,
         itemImageUrl: imageUrl,
-        mood: selectedTheme,
+        mood: mood,     // Use analyzed emotion name
         date: new Date().toLocaleDateString()
       };
 
