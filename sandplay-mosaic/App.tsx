@@ -6,7 +6,7 @@ import AssetPalette from './components/AssetPalette';
 import IsometricSandbox from './components/IsometricSandbox';
 import MuralView from './components/MuralView';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
-import { Eraser, ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2 } from 'lucide-react';
+import { Eraser, ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Sun } from 'lucide-react';
 
 const App: React.FC = () => {
   const [gameState, setGameState] = useState<AppState>(AppState.GROUNDING);
@@ -138,7 +138,7 @@ const App: React.FC = () => {
                   className="group relative overflow-hidden bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl transition-all duration-500 text-left"
                 >
                   <div className="w-12 h-12 rounded-2xl mb-6 transition-transform group-hover:scale-110 flex items-center justify-center text-white" style={{ backgroundColor: t.accent }}>
-                    {t.name === 'Forest' ? <Wind /> : t.name === 'Deep Sea' ? <Sparkles /> : <Globe />}
+                    {t.name === 'Forest' ? <Wind /> : t.name === 'Deep Sea' ? <Sparkles /> : t.name === 'Sand' ? <Sun /> : <Globe />}
                   </div>
                   <h3 className="text-2xl serif font-semibold text-slate-800 mb-2">{t.name}</h3>
                   <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
@@ -162,7 +162,13 @@ const App: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <IsometricSandbox objects={objects} onDrop={onDrop} activeThemeColor={THEMES.find(t => t.name === selectedTheme)?.accent || '#000'} />
+              <IsometricSandbox
+                objects={objects}
+                onDrop={onDrop}
+                activeThemeColor={THEMES.find(t => t.name === selectedTheme)?.accent || '#000'}
+                activeThemeBaseColor={THEMES.find(t => t.name === selectedTheme)?.color || '#fff'}
+                activeThemeName={selectedTheme}
+              />
             </div>
           </div>
         )}
