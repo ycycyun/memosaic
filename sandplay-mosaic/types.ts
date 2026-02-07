@@ -1,4 +1,7 @@
 
+// Fix: Import React to resolve the namespace error for React.ReactNode
+import React from 'react';
+
 export type AssetTheme = 'Forest' | 'Urban Solitude' | 'Deep Sea';
 
 export interface SandboxObject {

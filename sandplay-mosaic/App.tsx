@@ -19,38 +19,9 @@ const App: React.FC = () => {
   const [isShattering, setIsShattering] = useState(false);
   const [isGeneratingTalisman, setIsGeneratingTalisman] = useState(false);
 
-  // Initial Seed: A history of past talismans
+  // We no longer seed with placeholder data to ensure only the user's authentic AI talismans appear.
   useEffect(() => {
-    const seedShards: MuralShard[] = [
-      {
-        id: 'seed-1',
-        color: '#e2ece9',
-        accent: '#2d5a27',
-        itemName: 'Lichen Weaver\'s Prism',
-        itemImageUrl: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400?q=80&w=2070&auto=format&fit=crop', // Placeholder style
-        mood: 'Forest',
-        date: 'Day 22'
-      },
-      {
-        id: 'seed-2',
-        color: '#f1f1f1',
-        accent: '#4a5568',
-        itemName: 'Echo of Concrete Silence',
-        itemImageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2064&auto=format&fit=crop', // Placeholder style
-        mood: 'Urban Solitude',
-        date: 'Day 24'
-      },
-      {
-        id: 'seed-3',
-        color: '#e0f2fe',
-        accent: '#075985',
-        itemName: 'Anchor of Tidal Memory',
-        itemImageUrl: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=2074&auto=format&fit=crop', // Placeholder style
-        mood: 'Deep Sea',
-        date: 'Day 25'
-      }
-    ];
-    setMuralShards(seedShards);
+    setMuralShards([]);
   }, []);
 
   const handleStart = (theme: AssetTheme) => {
