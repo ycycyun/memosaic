@@ -254,10 +254,10 @@ const App: React.FC = () => {
           <div className="flex flex-col gap-12">
             <div className="flex justify-start">
               <button onClick={() => setGameState(AppState.GROUNDING)} className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-widest hover:translate-x-[-4px] transition-transform">
-                <ArrowLeft className="w-4 h-4" /> Return to Sandbox
+                <ArrowLeft className="w-4 h-4" /> Pick Theme
               </button>
             </div>
-            <ProfileView />
+            <ProfileView onPickTheme={() => setGameState(AppState.GROUNDING)} onReturnToSandbox={() => setGameState(AppState.BUILDING)} />
           </div>
         )}
 

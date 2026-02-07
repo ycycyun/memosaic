@@ -37,66 +37,47 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const baseGridSize = ISO_GRID_SIZE;
-  const rawA = baseGridSize / 1.5;
-  const rawB = baseGridSize / 3;
-  const rawGridWidth = (ISO_COLS - 1 + ISO_ROWS - 1) * rawA;
-  const rawGridHeight = (ISO_COLS - 1 + ISO_ROWS - 1) * rawB;
   const hasSurface = surfaceSize.width > 0 && surfaceSize.height > 0;
+  // Use padding to prevent items from touching the exact edge if desired, or 0 to fill
   const padding = 0;
-  const baseScaleX = hasSurface
-    ? (surfaceSize.width - padding * 2) / rawGridWidth
-    : 1;
-  const baseScaleY = hasSurface
-    ? (surfaceSize.height - padding * 2) / rawGridHeight
-    : 1;
-  const scaleX = baseScaleX * 1.21275;
-  const scaleY = baseScaleY * 1.21275;
-  const gridSizeX = baseGridSize * scaleX;
-  const gridSizeY = baseGridSize * scaleY;
-  const gridWidth = rawGridWidth * scaleX;
-  const gridHeight = rawGridHeight * scaleY;
-  const centerX = hasSurface ? surfaceSize.width / 2 : 0;
-  const centerY = hasSurface ? surfaceSize.height / 2 : 0;
-  const minX = -(ISO_ROWS - 1) * rawA * scaleX;
-  const minY = 0;
-  const originX = centerX - gridWidth / 2 - minX - centerX * 0.1;
-  const originY = centerY - gridHeight / 2 - minY - centerY * 0.15;
-  const hitSizeX = gridSizeX * 1.2;
-  const hitSizeY = gridSizeY * 1.2;
-  const hitOffsetX = (hitSizeX - gridSizeX) / 2;
-  const hitOffsetY = (hitSizeY - gridSizeY) / 2;
+  
+  // Create a rectilinear grid that fills the surface
+  // Divide surface width/height by number of columns/rows to get cell size
+  const cellWidth = hasSurface ? (surfaceSize.width - padding * 2) / ISO_COLS : 0;
+  const cellHeight = hasSurface ? (surfaceSize.height - padding * 2) / ISO_ROWS : 0;
+
+  // Use the smaller dimension to keep cells square if aspect ratio varies slightly, 
+  // or just use calculated width/height if we want full stretch.
+  // Since we enforced aspect-ratio: 1 on container, we effectively have square cells.
+  const cellSize = cellWidth; 
+
   const renderGrid = () => {
     const cells = [];
     const isSandTheme = activeThemeName === 'Sand';
     for (let x = 0; x < ISO_COLS; x++) {
       for (let y = 0; y < ISO_ROWS; y++) {
-        const pos = ISO_MATH.toIso(x, y);
-        const px = pos.x * scaleX;
-        const py = pos.y * scaleY;
+        // Cartesian positioning relative to top-left of the surface
+        const left = x * cellSize + padding;
+        const top = y * cellSize + padding;
+
         cells.push(
           <div
             key={`${x}-${y}`}
             onClick={() => onDrop(x, y)}
             className="absolute cursor-pointer group"
             style={{
-              left: `${originX + px - hitOffsetX}px`,
-              top: `${originY + py - hitOffsetY}px`,
-              width: `${hitSizeX}px`,
-              height: `${hitSizeY}px`,
-              zIndex: x + y
+              left: `${left}px`,
+              top: `${top}px`,
+              width: `${cellSize}px`,
+              height: `${cellSize}px`,
+              zIndex: 10
             }}
           >
-            {/* Grid Tile */}
+            {/* Grid Tile Content */}
             <div 
               className={`w-full h-full transition-colors ${isSandTheme ? '' : 'border border-slate-200/30 group-hover:bg-white/30'}`}
               style={{
-                transform: 'rotateX(60deg) rotateZ(45deg)',
                 backgroundColor: isSandTheme ? 'transparent' : activeThemeColor + '14',
-                width: `${gridSizeX}px`,
-                height: `${gridSizeY}px`,
-                marginLeft: `${hitOffsetX}px`,
-                marginTop: `${hitOffsetY}px`
               }}
             />
           </div>
@@ -130,7 +111,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
       surface: '#E6C288',
       border: '#8D6E63',
       noiseOpacity: 0.15
-    },
+    }
   };
 
   const tray = trayStyles[activeThemeName] || {
@@ -141,20 +122,21 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   };
   const noiseLayer = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='${tray.noiseOpacity}'/%3E%3C/svg%3E")`;
   const surfaceGradient = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 55%), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.12), transparent 55%)`;
+  const isSandTheme = activeThemeName === 'Sand';
 
   return (
     <div
       className="relative w-full h-[600px] flex items-center justify-center isometric-container"
-      style={{ perspective: '2074px' }}
+      style={{ perspective: '1200px' }}
     >
       <div
         className="relative transition-transform duration-700 ease-out preserve-3d"
         style={{
-          transform: 'rotateX(55deg) rotateZ(-45deg)',
+          transform: 'rotateX(60deg) rotateZ(45deg)',
           transformStyle: 'preserve-3d',
           transformOrigin: '50% 50%',
-          width: '34rem',
-          height: '34rem'
+          width: 'min(90%, 34rem)',
+          aspectRatio: '1'
         }}
       >
         <div
@@ -164,7 +146,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 
         <div
           ref={surfaceRef}
-          className="w-full h-full rounded-md border-4 relative overflow-visible"
+          className="w-full h-full rounded-md border-4 relative overflow-hidden"
           style={{
             backgroundColor: tray.surface,
             borderColor: tray.border,
@@ -174,26 +156,42 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
         >
           <div
             className="relative w-full h-full"
-            style={{ transform: 'rotateZ(45deg)', transformOrigin: '50% 50%' }}
+            style={{ transformOrigin: '50% 50%' }}
           >
             {renderGrid()}
+            <div 
+              className={`w-full h-full transition-colors ${isSandTheme ? '' : 'border border-slate-200/30 group-hover:bg-white/30'}`}
+              style={{
+                backgroundColor: isSandTheme ? 'transparent' : activeThemeColor + '14',
+                width: `${gridSizeX}px`,
+                height: `${gridSizeY}px`,
+                marginLeft: `${hitOffsetX}px`,
+                marginTop: `${hitOffsetY}px`
+              }}
+            />
 
             {objects.map((obj) => {
-              const pos = ISO_MATH.toIso(obj.x, obj.y);
-              const px = pos.x * scaleX;
-              const py = pos.y * scaleY;
-              const objectSize = gridSizeX * 4.2;
+              // Convert grid coordinates to px
+              const left = obj.x * cellSize + padding;
+              const top = obj.y * cellSize + padding;
+              
+              const objectSize = cellSize * 2.5; // Slightly larger for visibility
+
               return (
                 <div
                   key={obj.id}
                   className="absolute pointer-events-none transition-all duration-300"
                   style={{
-                    left: `${originX + px}px`,
-                    top: `${originY + py}px`,
+                    left: `${left + cellSize/2}px`, // Center in cell
+                    top: `${top + cellSize/2}px`,   // Center in cell
                     width: `${objectSize}px`,
-                    height: 'auto',
-                    zIndex: obj.x + obj.y + 10,
-                    transform: `translate(-40%, -40%) translate(0, -${20 * scaleY}px)`
+                    zIndex: obj.x + obj.y + 20,
+                    // Note: In 3D transformed space, Y is 'down' the board. 
+                    // To make object stand up, we rely on the parent's preserve-3d.
+                    // But here we just want it placed.
+                    // We counter-rotate the object so it aligns vertically with the screen
+                    transform: `translate(-50%, -100%) rotateZ(-45deg) rotateX(-60deg) translateY(-10px)`,
+                    transformOrigin: 'bottom center'
                   }}
                 >
                   <div className="flex flex-col items-center justify-end h-full">
@@ -202,7 +200,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                         src={obj.imageUrl}
                         alt={obj.name}
                         className="w-full h-auto object-contain drop-shadow-lg"
-                        style={{ transform: 'scaleY(1.2)', transformOrigin: 'bottom center' }}
+                        style={{ transformOrigin: 'bottom center' }}
                       />
                     ) : (
                       <div className="text-slate-700 bg-white/80 p-2 rounded-lg shadow-lg border border-slate-100 flex items-center justify-center">

@@ -13,7 +13,12 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 }
 
 // ProfileView should be a named export to match App.tsx import
-export const ProfileView: React.FC = () => {
+type ProfileViewProps = {
+  onPickTheme?: () => void;
+  onReturnToSandbox?: () => void;
+};
+
+export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox }) => {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -65,12 +70,32 @@ export const ProfileView: React.FC = () => {
             </p>
           </div>
           {sessions.length > 0 && (
-            <button
-              onClick={handleClearHistory}
-              className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              Clear History
-            </button>
+            <div className="flex items-center gap-3">
+              {onPickTheme && (
+                <button
+                  onClick={onPickTheme}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Pick Theme
+                </button>
+              )}
+
+              {onReturnToSandbox && (
+                <button
+                  onClick={onReturnToSandbox}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:bg-slate-50 rounded-lg transition-colors"
+                >
+                  Return to Sandbox
+                </button>
+              )}
+
+              <button
+                onClick={handleClearHistory}
+                className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                Clear History
+              </button>
+            </div>
           )}
         </div>
       </div>
