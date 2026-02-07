@@ -44,11 +44,7 @@ const AssetPalette: React.FC<AssetPaletteProps> = ({ theme, onSelect }) => {
               title={asset.name}
             >
               <div className="group-hover:scale-110 transition-transform">
-                {asset.imageUrl ? (
-                  <img src={asset.imageUrl} alt={asset.name} className="w-8 h-8 object-contain" />
-                ) : (
-                  asset.icon
-                )}
+                {asset.icon}
               </div>
             </button>
           ))}
