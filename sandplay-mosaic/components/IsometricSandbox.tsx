@@ -50,8 +50,8 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   const baseScaleY = hasSurface
     ? (surfaceSize.height - padding * 2) / rawGridHeight
     : 1;
-  const scaleX = baseScaleX * 1.155;
-  const scaleY = baseScaleY * 1.155;
+  const scaleX = baseScaleX * 1.21275;
+  const scaleY = baseScaleY * 1.21275;
   const gridSizeX = baseGridSize * scaleX;
   const gridSizeY = baseGridSize * scaleY;
   const gridWidth = rawGridWidth * scaleX;
@@ -138,12 +138,16 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   const surfaceGradient = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 55%), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.12), transparent 55%)`;
 
   return (
-    <div className="relative w-full h-[600px] flex items-center justify-center">
+    <div
+      className="relative w-full h-[600px] flex items-center justify-center isometric-container"
+      style={{ perspective: '2074px' }}
+    >
       <div
-        className="relative transition-transform duration-700 ease-out preserve-3d isometric-container"
+        className="relative transition-transform duration-700 ease-out preserve-3d"
         style={{
           transform: 'rotateX(55deg) rotateZ(-45deg)',
           transformStyle: 'preserve-3d',
+          transformOrigin: '50% 50%',
           width: '34rem',
           height: '34rem'
         }}
@@ -155,7 +159,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 
         <div
           ref={surfaceRef}
-          className="w-full h-full rounded-md border-4 relative overflow-hidden"
+          className="w-full h-full rounded-md border-4 relative overflow-visible"
           style={{
             backgroundColor: tray.surface,
             borderColor: tray.border,
@@ -173,7 +177,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
               const pos = ISO_MATH.toIso(obj.x, obj.y);
               const px = pos.x * scaleX;
               const py = pos.y * scaleY;
-              const objectSize = Math.min(gridSizeX, gridSizeY) * 4.2;
+              const objectSize = gridSizeX * 4.2;
               return (
                 <div
                   key={obj.id}
@@ -182,14 +186,19 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                     left: `${originX + px}px`,
                     top: `${originY + py}px`,
                     width: `${objectSize}px`,
-                    height: `${objectSize}px`,
+                    height: 'auto',
                     zIndex: obj.x + obj.y + 10,
-                    transform: `translate(-50%, -50%) translate(0, -${20 * scaleY}px)`
+                    transform: `translate(-40%, -40%) translate(0, -${20 * scaleY}px)`
                   }}
                 >
                   <div className="flex flex-col items-center justify-end h-full">
                     {obj.imageUrl ? (
-                      <img src={obj.imageUrl} alt={obj.name} className="w-full h-full object-contain drop-shadow-lg" />
+                      <img
+                        src={obj.imageUrl}
+                        alt={obj.name}
+                        className="w-full h-auto object-contain drop-shadow-lg"
+                        style={{ transform: 'scaleY(1.2)', transformOrigin: 'bottom center' }}
+                      />
                     ) : (
                       <div className="text-slate-700 bg-white/80 p-2 rounded-lg shadow-lg border border-slate-100 flex items-center justify-center">
                         {React.isValidElement(obj.icon) ? obj.icon : <span>{obj.name}</span>}
