@@ -1,5 +1,5 @@
 import Dedalus from "dedalus-labs";
-import { SandboxObject, Reframe } from "../types";
+import { SandboxObject, Reframe, AssetTheme } from "../types";
 
 const apiKey = import.meta.env.VITE_DEDALUS_API_KEY || "";
 const client = new Dedalus({ apiKey });
@@ -26,9 +26,57 @@ async function imageUrlToBase64(imageUrl: string): Promise<string> {
   }
 }
 
+// Remove chroma key (green) background and return PNG data URL
+async function removeChromaKeyBackground(imageUrl: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        reject(new Error("Canvas not supported"));
+        return;
+      }
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+
+        // Broad green removal: remove any strong green-dominant pixels
+        const greenDominance = g - Math.max(r, b);
+        const isGreenish = g > 50 && greenDominance > 10;
+
+        if (isGreenish) {
+          // Soft feather based on dominance; stronger green => more transparency
+          const feather = Math.min(1, Math.max(0, (greenDominance - 10) / 120));
+          data[i + 3] = Math.round(data[i + 3] * (1 - feather));
+
+          // If extremely green, fully remove
+          if (greenDominance > 90 || g > 200) {
+            data[i + 3] = 0;
+          }
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = (err) => reject(err);
+    img.src = imageUrl;
+  });
+}
+
 export const generateEmotionalImage = async (
   perspective: Perspective,
-  emotionName: string | null
+  emotionName: string | null,
+  emotionColor: string | null
 ): Promise<string> => {
   if (!apiKey) {
     throw new Error("Missing VITE_DEDALUS_API_KEY");
@@ -38,10 +86,15 @@ export const generateEmotionalImage = async (
     ? `infused with the feeling of ${emotionName}`
     : "neutral and calm";
 
+  const colorContext = emotionColor
+    ? `Use the style/theme color ${emotionColor} as a dominant accent within the palette.`
+    : "Use a gentle, harmonious accent color within the palette.";
+
   const prompt = `
     Create an abstract, artistic image in the style of a soft, watercolor mosaic or stained glass.
     Theme: "${perspective.title} - ${perspective.description}".
     Mood: ${emotionContext}.
+    ${colorContext}
     Colors: Soft, warm, healing, pastel tones.
     Visuals: Abstract shapes fitting together, glowing light, ethereal. No text.
   `;
@@ -157,7 +210,8 @@ export async function generateSummaryItem(objects: SandboxObject[], theme: strin
         title: talismanName,
         description: `${theme} sandplay talisman`,
       },
-      emotion
+      emotion,
+      color
     );
 
     return { name: talismanName, imageUrl, accent: color, mood: emotion };
@@ -166,25 +220,41 @@ export async function generateSummaryItem(objects: SandboxObject[], theme: strin
     console.error("Summary Generation Failed:", err);
     // Fallback
     const fallbackName = "The Silent Echo";
-    const imageUrl = await generateEmotionalImage({ title: fallbackName, description: "Unknown talisman" }, null);
+    const imageUrl = await generateEmotionalImage({ title: fallbackName, description: "Unknown talisman" }, null, null);
     return { name: fallbackName, imageUrl, accent: "#94a3b8", mood: "Reflection" };
   }
 }
 
-export async function generateAssetImage(prompt: string): Promise<string | null> {
+export async function generateAssetImage(prompt: string, theme: AssetTheme): Promise<string | null> {
   try {
     const response = await client.images.generate({
-      prompt: `A simple minimalist isometric sprite of ${prompt}. Clean white background, illustrative style, soft colors.`,
+      prompt: `IMPORTANT: Background MUST be pure chroma green sRGB (R=0,G=255,B=0) / #00FF00. Flat, uniform, no gradients, shadows, vignettes, or noise.
+
+    Create one abstract sandbox asset of ${prompt} for the "${theme}" theme in strict 2.5D isometric (30°/30°). No environment/ground/scene. Modular asset; calm minimalist; slight abstraction but architectural; firm geometry with softened edges; simplified planes/volumes; matte with subtle texture; muted Morandi palette (2-3 colors), low contrast, neutral-to-warm.`,
       model: "openai/dall-e-3",
       size: "1024x1024",
     });
 
-    const imageUrl = response.data[0]?.url;
-    if (!imageUrl) return null;
+    const firstImage = response.data[0];
+    const imageUrl = firstImage?.url
+      ? firstImage.url
+      : firstImage?.b64_json
+        ? `data:image/png;base64,${firstImage.b64_json}`
+        : null;
 
-    // Convert to base64 for persistent storage
-    const base64Image = await imageUrlToBase64(imageUrl);
-    return base64Image;
+    if (!imageUrl) {
+      console.warn("Image Gen Error: No image returned", response);
+      return null;
+    }
+
+    try {
+      const transparentPng = await removeChromaKeyBackground(imageUrl);
+      return transparentPng;
+    } catch (bgError) {
+      console.warn("Chroma key removal failed, falling back to original image", bgError);
+      const fallback = await imageUrlToBase64(imageUrl);
+      return fallback;
+    }
   } catch (error) {
     console.error("Image Gen Error:", error);
     return null;

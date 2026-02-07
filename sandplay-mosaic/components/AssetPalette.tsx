@@ -15,11 +15,31 @@ const AssetPalette: React.FC<AssetPaletteProps> = ({ theme, onSelect }) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const filteredAssets = CORE_ASSETS.filter(a => a.theme === theme);
+  const demoAssetMap: Record<string, string> = {
+    'teddy bear': 'Teddy Bear.png',
+    'old clock': 'Old Clock.png',
+    'scotty dog': 'Scotty Dog.png'
+  };
 
   const handleGenerate = async () => {
     if (!genQuery.trim()) return;
     setIsGenerating(true);
-    const imageUrl = await generateAssetImage(genQuery);
+    const normalizedQuery = genQuery.trim().toLowerCase().replace(/\s+/g, ' ');
+    const demoFile = demoAssetMap[normalizedQuery];
+
+    if (demoFile) {
+      const demoUrl = new URL(`../assets/${demoFile}`, import.meta.url).href;
+      onSelect({
+        name: genQuery,
+        imageUrl: demoUrl,
+        isGenerative: false
+      });
+      setGenQuery('');
+      setIsGenerating(false);
+      return;
+    }
+
+    const imageUrl = await generateAssetImage(genQuery, theme);
     if (imageUrl) {
       onSelect({
         name: genQuery,
