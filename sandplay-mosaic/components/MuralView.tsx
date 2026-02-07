@@ -18,7 +18,7 @@ const MuralView: React.FC<MuralViewProps> = ({ shards }) => {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto flex flex-col gap-12 animate-in fade-in duration-1000 pb-20">
+    <div className="w-full max-w-6xl mx-auto flex flex-col gap-12 animate-in fade-in duration-1000 pb-20">
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/50 border border-white/80 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4">
           <Calendar className="w-3 h-3" /> The Daily Talisman Collection
@@ -30,11 +30,12 @@ const MuralView: React.FC<MuralViewProps> = ({ shards }) => {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 px-4">
+      {/* Changed from grid to flex with justify-center to handle single and multiple items gracefully */}
+      <div className="flex flex-wrap justify-center gap-8 px-4">
         {shards.map((shard) => (
           <div 
             key={shard.id} 
-            className="group perspective-1000 aspect-square cursor-pointer"
+            className="group perspective-1000 aspect-square cursor-pointer w-full sm:w-64 md:w-72"
             onClick={() => toggleFlip(shard.id)}
           >
             <div className={`relative w-full h-full transition-transform duration-1000 preserve-3d shadow-xl rounded-3xl ${flippedIds.has(shard.id) ? 'rotate-y-180' : ''}`}>
