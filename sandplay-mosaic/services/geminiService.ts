@@ -4,6 +4,45 @@ import { SandboxObject, Reframe } from "../types";
 const apiKey = import.meta.env.VITE_DEDALUS_API_KEY || "";
 const client = new Dedalus({ apiKey });
 
+interface Perspective {
+  title: string;
+  description: string;
+}
+
+export const generateEmotionalImage = async (
+  perspective: Perspective,
+  emotionName: string | null
+): Promise<string> => {
+  if (!apiKey) {
+    throw new Error("Missing VITE_DEDALUS_API_KEY");
+  }
+
+  const emotionContext = emotionName
+    ? `infused with the feeling of ${emotionName}`
+    : "neutral and calm";
+
+  const prompt = `
+    Create an abstract, artistic image in the style of a soft, watercolor mosaic or stained glass.
+    Theme: "${perspective.title} - ${perspective.description}".
+    Mood: ${emotionContext}.
+    Colors: Soft, warm, healing, pastel tones.
+    Visuals: Abstract shapes fitting together, glowing light, ethereal. No text.
+  `;
+
+  const response = await client.images.generate({
+    prompt,
+    model: "openai/dall-e-3",
+    size: "1024x1024",
+  });
+
+  const imageUrl = response.data[0]?.url;
+  if (!imageUrl) {
+    throw new Error("No image URL returned");
+  }
+
+  return imageUrl;
+};
+
 export async function generateReframes(objects: SandboxObject[], theme: string): Promise<Reframe[]> {
   const layoutDesc = objects.map(o => `${o.name} at (${o.x}, ${o.y})`).join(', ');
   const prompt = `
@@ -57,13 +96,14 @@ export async function generateSummaryItem(objects: SandboxObject[], theme: strin
   const talismanName = (nameCompletion.choices[0]?.message?.content ?? "").trim() || "The Soul's Fragment";
 
   // 2. Generate the image for this talisman
-  const imageResponse = await client.images.generate({
-    prompt: `A high-quality minimalist isometric 3D render of a sacred talisman called "${talismanName}". It should look like a single precious object made of materials fitting a ${theme} theme. Soft cinematic lighting, white background, masterpiece style.`,
-    model: "openai/dall-e-3",
-    size: "1024x1024",
-  });
+  const imageUrl = await generateEmotionalImage(
+    {
+      title: talismanName,
+      description: `${theme} sandplay talisman`,
+    },
+    null
+  );
 
-  const imageUrl = imageResponse.data[0]?.url || "";
   return { name: talismanName, imageUrl };
 }
 
