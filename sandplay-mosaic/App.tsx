@@ -8,6 +8,10 @@ import MuralView from './components/MuralView';
 import { ProfileView } from './components/ProfileView'; // Confirmed named import is correct
 import Auth from './components/Auth';
 import { ThemeCarousel } from './components/ThemeCarousel';
+import DesertSandTrayBackground from './components/DesertSandTrayBackground';
+import ForestSandTrayBackground from './components/ForestSandTrayBackground';
+import SeaSandTrayBackground from './components/SeaSandTrayBackground';
+import UrbanSandTrayBackground from './components/UrbanSandTrayBackground';
 import { persistence } from './services/persistenceService';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
 import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle, LogOut } from 'lucide-react';
@@ -222,9 +226,20 @@ const App: React.FC = () => {
   };
 
   const currentThemeData = THEMES.find(t => t.name === selectedTheme);
+  const useThemeSandTrayBg = gameState === AppState.BUILDING;
+  const rootBg =
+    gameState === AppState.BUILDING
+      ? 'transparent'
+      : gameState === AppState.GROUNDING
+        ? 'transparent'
+        : '#ffffff';
 
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING ? currentThemeData?.color : gameState === AppState.GROUNDING ? 'transparent' : '#ffffff' }}>
+    <div className="min-h-screen flex flex-col transition-colors duration-1000 relative" style={{ backgroundColor: rootBg }}>
+      {useThemeSandTrayBg && selectedTheme === 'Desert' && <DesertSandTrayBackground />}
+      {useThemeSandTrayBg && selectedTheme === 'Forest' && <ForestSandTrayBackground />}
+      {useThemeSandTrayBg && selectedTheme === 'Sea' && <SeaSandTrayBackground />}
+      {useThemeSandTrayBg && selectedTheme === 'Urban' && <UrbanSandTrayBackground />}
       
       <header className="px-8 py-6 flex justify-between items-center bg-white/30 backdrop-blur-sm border-b border-white/40 sticky top-0 z-50">
         <button 
@@ -310,7 +325,7 @@ const App: React.FC = () => {
             <span className="text-slate-500 uppercase tracking-widest text-xs font-semibold mb-4">Phase I: Grounding</span>
             <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {currentUser.username}.</h2>
             <p className="text-slate-600 text-lg mb-12 leading-relaxed italic">
-              "Select a mood to begin your internal architecture."
+              Select a mood to begin your internal architecture.
             </p>
             <ThemeCarousel onSelectTheme={handleStart} />
           </div>
@@ -321,10 +336,10 @@ const App: React.FC = () => {
             <div className="flex flex-col gap-4">
               <AssetPalette theme={selectedTheme} onSelect={(asset) => setPendingAsset(asset)} />
               <button onClick={handleFinish} className="w-full bg-slate-900 text-white py-4 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl">
-                Finish Construction
+                Finish Scene
               </button>
               <button onClick={() => setObjects([])} className="w-full bg-white/50 border border-slate-200 text-slate-500 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">
-                Clear Board
+                Clear Scene
               </button>
             </div>
             <div className="flex-1 w-full flex flex-col gap-6">
@@ -332,7 +347,7 @@ const App: React.FC = () => {
                 <div>
                   <h2 className="text-3xl serif italic text-slate-800">The Sandbox</h2>
                   <p className="text-slate-500 text-sm mt-1 italic">
-                    {pendingAsset ? `Holding: ${pendingAsset.name}` : 'Construct your ephemeral world.'}
+                    {pendingAsset ? `Holding: ${pendingAsset.name}` : 'Design your sandbox world.'}
                   </p>
                 </div>
               </div>
@@ -353,7 +368,7 @@ const App: React.FC = () => {
           <div className="flex-1 flex flex-col gap-12">
             <div className="text-center">
               <h2 className="text-4xl serif italic text-slate-900 mb-4">Reflections</h2>
-              <p className="text-slate-600 max-w-xl mx-auto italic">How shall we distill this moment?</p>
+              <p className="text-slate-600 max-w-xl mx-auto italic">How should we reflect on this moment?</p>
               {genError && (
                 <div className="mt-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl inline-flex items-center gap-3 text-sm italic animate-in slide-in-from-top-4">
                   <AlertCircle className="w-4 h-4" /> {genError}
@@ -386,7 +401,7 @@ const App: React.FC = () => {
                       className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] hover:bg-slate-800 transition-all flex items-center justify-center gap-3 shadow-lg disabled:opacity-50"
                     >
                       {isGeneratingTalisman ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                      Manifest Talisman
+                      Create Talisman
                     </button>
                   </div>
                 ))}
@@ -434,7 +449,7 @@ const App: React.FC = () => {
                 onClick={() => requestNavigation('RESTART')} 
                 className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 transition-colors"
               >
-                Start Anew
+                Start A New
               </button>
             </div>
           </div>
@@ -443,7 +458,7 @@ const App: React.FC = () => {
 
       <footer className="py-8 px-8 text-center opacity-40">
         <p className="text-[10px] text-slate-500 uppercase tracking-[0.3em] font-bold">
-          Sandplay Mosaic • Distilled Sessions • TartanHacks 2026
+          Mosand • Distilled Sessions • TartanHacks 2026
         </p>
       </footer>
     </div>

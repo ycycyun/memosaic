@@ -558,10 +558,10 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
         className="absolute bottom-20 left-4 z-50 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg text-xs text-slate-600"
         data-sandbox-ui
       >
-        <div className="font-medium mb-1">Controls:</div>
-        <div>• Scroll to zoom in/out</div>
-        <div>• Press & drag canvas to pan</div>
-        <div>• Press & drag objects to move</div>
+        <div className="font-medium mb-1">Controls</div>
+        <div>• Scroll to zoom</div>
+        <div>• Drag canvas to pan</div>
+        <div>• Drag objects to move</div>
         <div>• Double-click to delete</div>
       </div>
 

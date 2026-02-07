@@ -34,7 +34,7 @@ const AssetPalette: React.FC<AssetPaletteProps> = ({ theme, onSelect }) => {
   return (
     <div className="bg-white/80 backdrop-blur-md border border-slate-200 rounded-2xl p-6 shadow-xl w-72 flex flex-col gap-6">
       <div>
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Core Assets</h3>
+        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Sandbox Elements</h3>
         <div className="grid grid-cols-4 gap-3">
           {filteredAssets.map((asset, i) => (
             <button
@@ -54,14 +54,14 @@ const AssetPalette: React.FC<AssetPaletteProps> = ({ theme, onSelect }) => {
       <div className="border-t border-slate-100 pt-6">
         <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-500" />
-          Manifest Custom
+          Create Custom Object
         </h3>
         <div className="flex gap-2">
           <input
             type="text"
             value={genQuery}
             onChange={(e) => setGenQuery(e.target.value)}
-            placeholder="Type 'old clock'..."
+            placeholder="Type an object…"
             className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
             disabled={isGenerating}
           />
