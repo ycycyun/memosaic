@@ -9,6 +9,23 @@ interface Perspective {
   description: string;
 }
 
+// Convert image URL to base64 data URL for persistent storage
+async function imageUrlToBase64(imageUrl: string): Promise<string> {
+  try {
+    const response = await fetch(imageUrl);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn("Failed to convert image to base64, using original URL", error);
+    return imageUrl;
+  }
+}
+
 export const generateEmotionalImage = async (
   perspective: Perspective,
   emotionName: string | null
@@ -40,7 +57,9 @@ export const generateEmotionalImage = async (
     throw new Error("No image URL returned");
   }
 
-  return imageUrl;
+  // Convert to base64 for persistent storage
+  const base64Image = await imageUrlToBase64(imageUrl);
+  return base64Image;
 };
 
 export async function generateReframes(objects: SandboxObject[], theme: string): Promise<Reframe[]> {
@@ -115,7 +134,12 @@ export async function generateAssetImage(prompt: string): Promise<string | null>
       size: "1024x1024",
     });
 
-    return response.data[0]?.url || null;
+    const imageUrl = response.data[0]?.url;
+    if (!imageUrl) return null;
+
+    // Convert to base64 for persistent storage
+    const base64Image = await imageUrlToBase64(imageUrl);
+    return base64Image;
   } catch (error) {
     console.error("Image Gen Error:", error);
     return null;

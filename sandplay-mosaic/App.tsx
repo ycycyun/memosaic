@@ -1,14 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { AppState, AssetTheme, SandboxObject, Reframe, MuralShard } from './types';
-import { THEMES, CORE_ASSETS } from './constants';
+import { THEMES } from './constants';
 import AssetPalette from './components/AssetPalette';
 import IsometricSandbox from './components/IsometricSandbox';
 import MuralView from './components/MuralView';
+import { ProfileView } from './components/ProfileView'; // Confirmed named import is correct
+import { ThemeCarousel } from './components/ThemeCarousel';
+import { persistence } from './services/persistenceService';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
-import { Eraser, ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Sun } from 'lucide-react';
+import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle } from 'lucide-react';
 
 const App: React.FC = () => {
+  // Implicit single user
+  const user = { id: 'traveler', username: 'Traveler' };
+  
   const [gameState, setGameState] = useState<AppState>(AppState.GROUNDING);
   const [selectedTheme, setSelectedTheme] = useState<AssetTheme>('Forest');
   const [objects, setObjects] = useState<SandboxObject[]>([]);
@@ -18,13 +24,26 @@ const App: React.FC = () => {
   const [muralShards, setMuralShards] = useState<MuralShard[]>([]);
   const [isShattering, setIsShattering] = useState(false);
   const [isGeneratingTalisman, setIsGeneratingTalisman] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [genError, setGenError] = useState<string | null>(null);
 
-  // We no longer seed with placeholder data to ensure only the user's authentic AI talismans appear.
-  useEffect(() => {
-    setMuralShards([]);
-  }, []);
+  // Persistence State tracking
+  const [isSessionSaved, setIsSessionSaved] = useState(false);
+  const [showSaveWarning, setShowSaveWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<'PROFILE' | 'RESTART' | null>(null);
 
   const handleStart = (theme: AssetTheme) => {
+    // Completely reset session state when starting a new flow
+    setObjects([]);
+    setReframes([]);
+    setMuralShards([]);
+    setGenError(null);
+    setIsSessionSaved(false);
+    setIsAnalyzing(false);
+    setIsShattering(false);
+    setIsGeneratingTalisman(false);
+    setPendingAsset(null);
+
     setSelectedTheme(theme);
     setGameState(AppState.BUILDING);
   };
@@ -63,14 +82,21 @@ const App: React.FC = () => {
     if (objects.length === 0) return;
     setIsAnalyzing(true);
     setGameState(AppState.REFLECTING);
-    const results = await generateReframes(objects, selectedTheme);
-    setReframes(results);
-    setIsAnalyzing(false);
+    try {
+      const results = await generateReframes(objects, selectedTheme);
+      setReframes(results);
+    } catch (err) {
+      console.error("Reflection generation failed", err);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleRelease = async () => {
+    setGenError(null);
     setIsGeneratingTalisman(true);
     setIsShattering(true);
+    setIsSessionSaved(false); // Reset saved state for new session
 
     try {
       const { name, imageUrl } = await generateSummaryItem(objects, selectedTheme);
@@ -83,32 +109,100 @@ const App: React.FC = () => {
         itemName: name,
         itemImageUrl: imageUrl,
         mood: selectedTheme,
-        date: 'Today'
+        date: new Date().toLocaleDateString()
       };
 
-      setMuralShards(prev => [newMuralEntry, ...prev]);
+      setMuralShards([newMuralEntry]);
       
-      // Delay slightly for visual effect
       setTimeout(() => {
         setGameState(AppState.COMMUNITY);
         setIsShattering(false);
         setIsGeneratingTalisman(false);
-      }, 1000);
+      }, 1500);
     } catch (error) {
       console.error("Talisman generation failed", error);
+      setGenError("The spirit of the day is playing hide and seek. Please try again in a moment.");
       setIsShattering(false);
       setIsGeneratingTalisman(false);
     }
   };
 
-  const handleRestart = () => {
-    setObjects([]);
-    setReframes([]);
-    setGameState(AppState.GROUNDING);
+  const executeSave = () => {
+    if (muralShards.length === 0) return;
+    setIsSaving(true);
+    const shard = muralShards[0];
+    
+    persistence.saveSession({
+      talismanName: shard.itemName,
+      talismanImageUrl: shard.itemImageUrl || '',
+      mood: shard.mood,
+      date: shard.date,
+      accent: shard.accent,
+      objects: objects
+    });
+    
+    // Simulate API delay
+    setTimeout(() => {
+      setIsSaving(false);
+      setIsSessionSaved(true);
+    }, 600);
   };
 
+  // --- Navigation & Protection Logic ---
+
+  const requestNavigation = (destination: 'PROFILE' | 'RESTART') => {
+    // Only check for unsaved changes if we are on the result screen (COMMUNITY)
+    // and haven't saved yet.
+    if (gameState === AppState.COMMUNITY && !isSessionSaved) {
+      setPendingNavigation(destination);
+      setShowSaveWarning(true);
+    } else {
+      executeNavigation(destination);
+    }
+  };
+
+  const executeNavigation = (destination: 'PROFILE' | 'RESTART') => {
+    if (destination === 'PROFILE') {
+      setGameState(AppState.PROFILE);
+    } else if (destination === 'RESTART') {
+      // Clean up even though handleStart will do it too, good to be explicit here
+      setObjects([]);
+      setReframes([]);
+      setMuralShards([]);
+      setGenError(null);
+      setGameState(AppState.GROUNDING);
+    }
+  };
+
+  const handleConfirmDiscard = () => {
+    setShowSaveWarning(false);
+    if (pendingNavigation) {
+      executeNavigation(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
+  const handleConfirmSaveAndNavigate = () => {
+    executeSave();
+    // Wait a bit for the save simulation then navigate
+    setTimeout(() => {
+      setShowSaveWarning(false);
+      if (pendingNavigation) {
+        executeNavigation(pendingNavigation);
+        setPendingNavigation(null);
+      }
+    }, 800);
+  };
+
+  const handleCancelNavigation = () => {
+    setShowSaveWarning(false);
+    setPendingNavigation(null);
+  };
+
+  const currentThemeData = THEMES.find(t => t.name === selectedTheme);
+
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: THEMES.find(t => t.name === selectedTheme)?.color }}>
+    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING || gameState === AppState.GROUNDING ? currentThemeData?.color : '#ffffff' }}>
       
       <header className="px-8 py-6 flex justify-between items-center bg-white/30 backdrop-blur-sm border-b border-white/40 sticky top-0 z-50">
         <div className="flex items-center gap-3">
@@ -117,56 +211,92 @@ const App: React.FC = () => {
           </div>
           <h1 className="text-xl font-bold text-slate-800 tracking-tight">Sandplay Mosaic</h1>
         </div>
-        <div className="flex items-center gap-6">
-          {gameState === AppState.BUILDING && (
-            <div className="flex gap-4">
-              <button onClick={() => setObjects([])} className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 rounded-lg transition-colors">
-                <Eraser className="w-4 h-4" /> Reset
-              </button>
-              <button onClick={handleFinish} className="bg-slate-900 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-slate-800 transition-all shadow-lg">
-                I'm Finished
-              </button>
-            </div>
-          )}
-          {gameState === AppState.COMMUNITY && (
-             <button onClick={handleRestart} className="flex items-center gap-2 text-sm font-bold text-slate-900 uppercase tracking-widest hover:translate-x-[-4px] transition-transform">
-                <ArrowLeft className="w-4 h-4" /> Start Anew
-             </button>
-          )}
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => requestNavigation('PROFILE')} 
+            className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors ${gameState === AppState.PROFILE ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <BookOpen className="w-4 h-4" /> My Journal
+          </button>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col p-8 max-w-7xl mx-auto w-full">
+      <main className="flex-1 flex flex-col p-8 max-w-7xl mx-auto w-full relative">
+
+        {/* --- Unsaved Changes Modal --- */}
+        {showSaveWarning && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-md w-full border border-slate-100 transform transition-all scale-100">
+              <div className="flex items-center gap-4 mb-4 text-amber-500">
+                <div className="p-3 bg-amber-50 rounded-full">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl serif font-bold text-slate-800">Unsaved Memory</h3>
+              </div>
+              <p className="text-slate-600 mb-8 leading-relaxed">
+                You haven't saved this talisman to your journal yet. 
+                Leaving now means this specific reflection will be lost forever.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={handleConfirmSaveAndNavigate}
+                  disabled={isSaving}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                >
+                   {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bookmark className="w-4 h-4" />}
+                   Save & Continue
+                </button>
+                <button 
+                  onClick={handleConfirmDiscard}
+                  className="w-full py-3 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl font-bold text-sm transition-colors"
+                >
+                  Discard & Leave
+                </button>
+                <button 
+                  onClick={handleCancelNavigation}
+                  className="w-full py-2 text-slate-400 hover:text-slate-600 text-xs font-bold uppercase tracking-widest"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameState === AppState.PROFILE && (
+          <div className="flex flex-col gap-12">
+            <div className="flex justify-start">
+              <button onClick={() => setGameState(AppState.GROUNDING)} className="flex items-center gap-2 text-xs font-bold text-slate-900 uppercase tracking-widest hover:translate-x-[-4px] transition-transform">
+                <ArrowLeft className="w-4 h-4" /> Pick Theme
+              </button>
+            </div>
+            <ProfileView onPickTheme={() => setGameState(AppState.GROUNDING)} onReturnToSandbox={() => setGameState(AppState.BUILDING)} />
+          </div>
+        )}
+
         {gameState === AppState.GROUNDING && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-3xl mx-auto">
+          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full">
             <span className="text-slate-500 uppercase tracking-widest text-xs font-semibold mb-4">Phase I: Grounding</span>
-            <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere.</h2>
+            <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {user.username}.</h2>
             <p className="text-slate-600 text-lg mb-12 leading-relaxed italic">
               "Select a mood to begin your internal architecture."
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {THEMES.map((t) => (
-                <button
-                  key={t.name}
-                  onClick={() => handleStart(t.name as AssetTheme)}
-                  className="group relative overflow-hidden bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl transition-all duration-500 text-left"
-                >
-                  <div className="w-12 h-12 rounded-2xl mb-6 transition-transform group-hover:scale-110 flex items-center justify-center text-white" style={{ backgroundColor: t.accent }}>
-                    {t.name === 'Forest' ? <Wind /> : t.name === 'Deep Sea' ? <Sparkles /> : t.name === 'Sand' ? <Sun /> : <Globe />}
-                  </div>
-                  <h3 className="text-2xl serif font-semibold text-slate-800 mb-2">{t.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                    Enter Space <ChevronRight className="w-4 h-4" />
-                  </div>
-                </button>
-              ))}
-            </div>
+            <ThemeCarousel onSelectTheme={handleStart} />
           </div>
         )}
 
         {gameState === AppState.BUILDING && (
           <div className="flex flex-col md:flex-row gap-12 items-start justify-center">
-            <AssetPalette theme={selectedTheme} onSelect={(asset) => setPendingAsset(asset)} />
+            <div className="flex flex-col gap-4">
+              <AssetPalette theme={selectedTheme} onSelect={(asset) => setPendingAsset(asset)} />
+              <button onClick={handleFinish} className="w-full bg-slate-900 text-white py-4 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl">
+                Finish Construction
+              </button>
+              <button onClick={() => setObjects([])} className="w-full bg-white/50 border border-slate-200 text-slate-500 py-3 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-white transition-all">
+                Clear Board
+              </button>
+            </div>
             <div className="flex-1 w-full flex flex-col gap-6">
               <div className="flex justify-between items-center">
                 <div>
@@ -194,6 +324,11 @@ const App: React.FC = () => {
             <div className="text-center">
               <h2 className="text-4xl serif italic text-slate-900 mb-4">Reflections</h2>
               <p className="text-slate-600 max-w-xl mx-auto italic">How shall we distill this moment?</p>
+              {genError && (
+                <div className="mt-6 p-4 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl inline-flex items-center gap-3 text-sm italic animate-in slide-in-from-top-4">
+                  <AlertCircle className="w-4 h-4" /> {genError}
+                </div>
+              )}
             </div>
             {isAnalyzing ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-6">
@@ -206,7 +341,7 @@ const App: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {reframes.map((r, i) => (
-                  <div key={i} className="bg-white/80 backdrop-blur-sm p-10 rounded-[2.5rem] border border-white shadow-xl hover:-translate-y-1 transition-all flex flex-col">
+                  <div key={i} className="bg-white/80 backdrop-blur-sm p-10 rounded-[2.5rem] border border-slate-100 shadow-xl hover:-translate-y-1 transition-all flex flex-col">
                     <div className="flex items-center gap-3 mb-8">
                       <div className="w-10 h-10 rounded-2xl bg-slate-900 flex items-center justify-center text-white shadow-lg shadow-slate-200">
                         {r.type === 'Mirror' ? <Wind className="w-5 h-5" /> : r.type === 'Architect' ? <Layers className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
@@ -244,7 +379,35 @@ const App: React.FC = () => {
         )}
 
         {gameState === AppState.COMMUNITY && !isShattering && (
-          <MuralView shards={muralShards} />
+          <div className="flex flex-col gap-10">
+            <MuralView shards={muralShards} />
+            <div className="flex flex-col items-center gap-6 pb-20">
+              <button 
+                onClick={executeSave}
+                disabled={isSaving || isSessionSaved}
+                className={`group flex items-center gap-4 bg-white px-10 py-5 rounded-3xl shadow-xl hover:shadow-2xl transition-all ${!isSessionSaved ? 'hover:-translate-y-1' : ''}`}
+              >
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all ${isSessionSaved ? 'bg-green-500' : 'bg-indigo-500 group-hover:scale-110'}`}>
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Bookmark className="w-5 h-5" />}
+                </div>
+                <div className="text-left">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                    {isSessionSaved ? 'Memory Secured' : 'Preserve this Moment'}
+                  </p>
+                  <p className="text-lg serif italic text-slate-800">
+                    {isSessionSaved ? 'Saved to Journal' : 'Save to My Journal'}
+                  </p>
+                </div>
+              </button>
+              
+              <button 
+                onClick={() => requestNavigation('RESTART')} 
+                className="text-[10px] font-bold uppercase tracking-[0.3em] text-slate-400 hover:text-slate-900 transition-colors"
+              >
+                Start Anew
+              </button>
+            </div>
+          </div>
         )}
       </main>
 

@@ -1,8 +1,24 @@
 
-// Fix: Import React to resolve the namespace error for React.ReactNode
 import React from 'react';
 
-export type AssetTheme = 'Forest' | 'Urban Solitude' | 'Deep Sea' | 'Sand';
+// Removed global declaration for ImportMetaEnv as `import.meta.env` is not used directly.
+
+export type AssetTheme = 'Forest' | 'Urban Solitude' | 'Deep Sea';
+
+export interface User {
+  id: string;
+  username: string;
+}
+
+export interface SavedSession {
+  id: string;
+  talismanName: string;
+  talismanImageUrl: string;
+  mood: string;
+  date: string;
+  accent: string;
+  objects: SandboxObject[];
+}
 
 export interface SandboxObject {
   id: string;
@@ -37,6 +53,6 @@ export enum AppState {
   GROUNDING = 'GROUNDING',
   BUILDING = 'BUILDING',
   REFLECTING = 'REFLECTING',
-  RELEASED = 'RELEASED',
-  COMMUNITY = 'COMMUNITY'
+  COMMUNITY = 'COMMUNITY',
+  PROFILE = 'PROFILE'
 }
