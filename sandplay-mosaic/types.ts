@@ -3,7 +3,7 @@ import React from 'react';
 
 // Removed global declaration for ImportMetaEnv as `import.meta.env` is not used directly.
 
-export type AssetTheme = 'Forest' | 'Urban Solitude' | 'Deep Sea';
+export type AssetTheme = 'Desert' | 'Forest' | 'Sea' | 'Urban';
 
 export interface User {
   id: string;
