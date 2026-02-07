@@ -2,10 +2,10 @@
 import type { AssetTheme } from './types';
 
 export const THEMES = [
+  { name: 'Desert', color: '#f6e3c1', accent: '#8d6e63' },
   { name: 'Forest', color: '#e2ece9', accent: '#2d5a27' },
-  { name: 'Urban Solitude', color: '#f1f1f1', accent: '#4a5568' },
-  { name: 'Deep Sea', color: '#e0f2fe', accent: '#075985' },
-  { name: 'Sand', color: '#f6e3c1', accent: '#8d6e63' }
+  { name: 'Sea', color: '#e0f2fe', accent: '#075985' },
+  { name: 'Urban', color: '#f1f1f1', accent: '#4a5568' }
 ];
 
 const assetUrl = (file: string) => new URL(`./assets/${file}`, import.meta.url).href;
@@ -23,10 +23,10 @@ const buildAssets = (prefix: string, objects: string[], theme: AssetTheme) =>
   });
 
 export const CORE_ASSETS = [
+  ...buildAssets('sand', ['ball', 'box', 'bridge', 'car', 'cat', 'cloud', 'dog', 'flower', 'fox', 'house', 'key', 'light', 'rock', 'tree'], 'Desert'),
   ...buildAssets('forest', ['axe', 'bush', 'campfire', 'cave', 'cliff', 'deer', 'fog', 'mushroom', 'rabbit', 'soil', 'stream', 'tree', 'vine'], 'Forest'),
-  ...buildAssets('urban', ['bench', 'bicycle', 'building', 'bus stop', 'bus', 'shop', 'street lamp', 'student', 'trash bin', 'vending machine', 'worker'], 'Urban Solitude'),
-  ...buildAssets('sea', ['anchor', 'coral reef', 'corals', 'fish', 'lighthouse', 'pier', 'rain', 'sailboat', 'seagull', 'seashell', 'turtle', 'wave', 'wooden boat'], 'Deep Sea'),
-  ...buildAssets('sand', ['ball', 'box', 'bridge', 'car', 'cat', 'cloud', 'dog', 'flower', 'fox', 'house', 'key', 'light', 'rock', 'tree'], 'Sand')
+  ...buildAssets('sea', ['anchor', 'coral reef', 'corals', 'fish', 'lighthouse', 'pier', 'rain', 'sailboat', 'seagull', 'seashell', 'turtle', 'wave', 'wooden boat'], 'Sea'),
+  ...buildAssets('urban', ['bench', 'bicycle', 'building', 'bus stop', 'bus', 'shop', 'street lamp', 'student', 'trash bin', 'vending machine', 'worker'], 'Urban')
 ];
 
 export const ISO_GRID_SIZE = 40;

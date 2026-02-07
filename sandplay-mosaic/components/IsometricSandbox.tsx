@@ -421,7 +421,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 
   const renderGrid = () => {
     const cells = [];
-    const isSandTheme = activeThemeName === 'Sand';
+    const isSandTheme = activeThemeName === 'Desert';
     for (let x = 0; x < ISO_COLS; x++) {
       for (let y = 0; y < ISO_ROWS; y++) {
         const pos = ISO_MATH.toIso(x, y);
@@ -459,38 +459,38 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   };
 
   const trayStyles: Record<AssetTheme, { frame: string; surface: string; border: string; noiseOpacity: number }> = {
+    Desert: {
+      frame: '#5D4037',
+      surface: '#E6C288',
+      border: '#8D6E63',
+      noiseOpacity: 0.15
+    },
     Forest: {
       frame: '#2b3a2f',
       surface: activeThemeBaseColor,
       border: '#6b7f5f',
       noiseOpacity: 0.08
     },
-    'Urban Solitude': {
-      frame: '#3f3f46',
-      surface: activeThemeBaseColor,
-      border: '#a1a1aa',
-      noiseOpacity: 0.06
-    },
-    'Deep Sea': {
+    Sea: {
       frame: '#0f3b4a',
       surface: activeThemeBaseColor,
       border: '#2b6f8f',
       noiseOpacity: 0.08
     },
-    Sand: {
-      frame: '#5D4037',
-      surface: '#E6C288',
-      border: '#8D6E63',
-      noiseOpacity: 0.15
-    },
+    Urban: {
+      frame: '#3f3f46',
+      surface: activeThemeBaseColor,
+      border: '#a1a1aa',
+      noiseOpacity: 0.06
+    }
   };
 
   const tray = trayStyles[activeThemeName];
   const hoverRingColors: Record<AssetTheme, string> = {
+    Desert: '#2DD4BF',
     Forest: '#FF3D8A',
-    'Urban Solitude': '#38BDF8',
-    'Deep Sea': '#FFD60A',
-    Sand: '#2DD4BF'
+    Sea: '#FFD60A',
+    Urban: '#38BDF8'
   };
   const hoverRingColor = hoverRingColors[activeThemeName];
   const noiseLayer = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='${tray.noiseOpacity}'/%3E%3C/svg%3E")`;

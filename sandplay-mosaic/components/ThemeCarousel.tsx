@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { AssetTheme } from '../types';
 import { THEMES } from '../constants';
-import { ChevronLeft, ChevronRight, Wind, Sparkles, Globe } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import DesertImg from '../assets/Desert.PNG';
+import ForestImg from '../assets/Forest.PNG';
+import SeaImg from '../assets/Sea.PNG';
+import UrbanImg from '../assets/Urban.PNG';
 
 interface ThemeCarouselProps {
   onSelectTheme: (theme: AssetTheme) => void;
 }
 
 export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) => {
-  const [centerIndex, setCenterIndex] = useState(2); // Start with "Sand" (index 3) in the middle, but let's use index 2 for "Deep Sea"
+  const [centerIndex, setCenterIndex] = useState(2); // Start with "Desert" (index 0) in the middle
 
-  // Adjust to start with Sand theme
-  const initialIndex = THEMES.findIndex(t => t.name === 'Sand');
+  // Adjust to start with Desert theme
+  const initialIndex = THEMES.findIndex(t => t.name === 'Desert');
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
 
   const handleNext = () => {
@@ -30,16 +34,19 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
   const leftTheme = getThemeAt(-1);
   const rightTheme = getThemeAt(1);
 
-  const getIcon = (themeName: string) => {
+  const getIcon = (themeName: string, isCenter: boolean = false) => {
+    const sizeClass = isCenter ? 'w-36 h-36' : 'w-20 h-20';
     switch (themeName) {
+      case 'Desert':
+        return <img src={DesertImg} alt="Desert" className={`${sizeClass} object-contain rounded-3xl pointer-events-none`} />;
       case 'Forest':
-        return <Wind className="w-8 h-8" />;
-      case 'Deep Sea':
-        return <Sparkles className="w-8 h-8" />;
-      case 'Urban Solitude':
-        return <Globe className="w-8 h-8" />;
+        return <img src={ForestImg} alt="Forest" className={`${sizeClass} object-contain rounded-3xl pointer-events-none`} />;
+      case 'Sea':
+        return <img src={SeaImg} alt="Sea" className={`${sizeClass} object-contain rounded-3xl pointer-events-none`} />;
+      case 'Urban':
+        return <img src={UrbanImg} alt="Urban" className={`${sizeClass} object-contain rounded-3xl pointer-events-none`} />;
       default:
-        return <Globe className="w-8 h-8" />;
+        return <img src={UrbanImg} alt="Urban" className={`${sizeClass} object-contain rounded-3xl pointer-events-none`} />;
     }
   };
 
@@ -61,7 +68,7 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
             {/* Left Preview */}
             <div className="flex flex-col items-center gap-3 opacity-40 scale-50 transform -translate-x-12">
               <div className="w-24 h-24 rounded-3xl shadow-lg flex items-center justify-center text-white" style={{ backgroundColor: leftTheme.accent }}>
-                {getIcon(leftTheme.name)}
+                {getIcon(leftTheme.name, false)}
               </div>
               <h3 className="text-lg serif font-semibold text-slate-700">{leftTheme.name}</h3>
             </div>
@@ -73,7 +80,7 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
                 className="group relative"
               >
                 <div className="w-40 h-40 rounded-3xl shadow-2xl flex items-center justify-center text-white transition-all hover:scale-105 transform" style={{ backgroundColor: centerTheme.accent }}>
-                  {getIcon(centerTheme.name)}
+                  {getIcon(centerTheme.name, true)}
                 </div>
               </button>
               <div className="text-center">
@@ -85,7 +92,7 @@ export const ThemeCarousel: React.FC<ThemeCarouselProps> = ({ onSelectTheme }) =
             {/* Right Preview */}
             <div className="flex flex-col items-center gap-3 opacity-40 scale-50 transform translate-x-12">
               <div className="w-24 h-24 rounded-3xl shadow-lg flex items-center justify-center text-white" style={{ backgroundColor: rightTheme.accent }}>
-                {getIcon(rightTheme.name)}
+                {getIcon(rightTheme.name, false)}
               </div>
               <h3 className="text-lg serif font-semibold text-slate-700">{rightTheme.name}</h3>
             </div>
