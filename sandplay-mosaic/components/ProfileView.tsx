@@ -16,32 +16,38 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 type ProfileViewProps = {
   onPickTheme?: () => void;
   onReturnToSandbox?: () => void;
+  username: string;
 };
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox, username }) => {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Ensure persistence.getAllSessions() returns SavedSession[]
-    const data = persistence.getAllSessions();
+    // Ensure persistence.getAllSessions sends the correct userId
+    const data = persistence.getAllSessions(username);
     if (data) {
         setSessions(data);
     }
-  }, []);
+  }, [username]);
 
   const handleCubeClick = (id: string) => {
-    if (selectedId === id) {
-      setSelectedId(null);
-    } else {
-      setSelectedId(id);
-    }
+    setFlippedIds(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        return next;
+    });
   };
 
   const handleClearHistory = () => {
     if (confirm('Are you sure you want to delete all your memory history? This cannot be undone.')) {
       persistence.clearHistory();
       setSessions([]);
+      setFlippedIds(new Set());
     }
   };
 
@@ -51,7 +57,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
       const updatedSessions = sessions.filter(session => session.id !== id);
       setSessions(updatedSessions);
       localStorage.setItem('sandplay_sessions', JSON.stringify(updatedSessions));
-      setSelectedId(null);
+      setFlippedIds(prev => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+      });
     }
   };
 
@@ -64,7 +74,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
       <div className="relative w-full pt-12 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-start">
           <div>
-            <h2 className="text-5xl serif italic text-slate-900 mb-2">Your Memories</h2>
+            <h2 className="text-5xl serif italic text-slate-900 mb-2">{username}'s Journal</h2>
             <p className="text-slate-500 max-w-2xl italic text-base">
               Click on any memory cube to explore its essence.
             </p>
@@ -117,7 +127,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
                 {/* Memory cubes in flex mosaic layout */}
                 <div className="flex flex-wrap justify-center gap-1 pb-1">
                   {shelf.map((session, cubeIndex) => {
-                    const isSelected = selectedId === session.id;
+                    const isSelected = flippedIds.has(session.id);
                     const delay = cubeIndex * 0.05;
                     
                     return (

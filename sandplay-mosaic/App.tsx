@@ -1,21 +1,22 @@
 
 import React, { useState } from 'react';
-import { AppState, AssetTheme, SandboxObject, Reframe, MuralShard } from './types';
+import { AppState, AssetTheme, SandboxObject, Reframe, MuralShard, User } from './types';
 import { THEMES } from './constants';
 import AssetPalette from './components/AssetPalette';
 import IsometricSandbox from './components/IsometricSandbox';
 import MuralView from './components/MuralView';
 import { ProfileView } from './components/ProfileView'; // Confirmed named import is correct
+import Auth from './components/Auth';
 import { ThemeCarousel } from './components/ThemeCarousel';
 import { persistence } from './services/persistenceService';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
-import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle } from 'lucide-react';
+import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle, LogOut } from 'lucide-react';
 // @ts-ignore
 import mosandLogo from './assets/mosand_logo_v2.svg';
 
 const App: React.FC = () => {
-  // Implicit single user
-  const user = { id: 'traveler', username: 'Traveler' };
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
   
   const [gameState, setGameState] = useState<AppState>(AppState.GROUNDING);
   const [selectedTheme, setSelectedTheme] = useState<AssetTheme>('Forest');
@@ -33,6 +34,24 @@ const App: React.FC = () => {
   const [isSessionSaved, setIsSessionSaved] = useState(false);
   const [showSaveWarning, setShowSaveWarning] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<'PROFILE' | 'RESTART' | null>(null);
+
+  const handleLogin = (user: User) => {
+    setCurrentUser(user);
+    setGameState(AppState.GROUNDING);
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setGameState(AppState.GROUNDING);
+    // Reset other states
+    setObjects([]);
+    setReframes([]);
+    setMuralShards([]);
+  };
+
+  if (!currentUser) {
+    return <Auth onLogin={handleLogin} />;
+  }
 
   const handleStart = (theme: AssetTheme) => {
     // Completely reset session state when starting a new flow
@@ -130,11 +149,12 @@ const App: React.FC = () => {
   };
 
   const executeSave = () => {
-    if (muralShards.length === 0) return;
+    if (muralShards.length === 0 || !currentUser) return;
     setIsSaving(true);
     const shard = muralShards[0];
     
     persistence.saveSession({
+      userId: currentUser.id,
       talismanName: shard.itemName,
       talismanImageUrl: shard.itemImageUrl || '',
       mood: shard.mood,
@@ -204,7 +224,7 @@ const App: React.FC = () => {
   const currentThemeData = THEMES.find(t => t.name === selectedTheme);
 
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING || gameState === AppState.GROUNDING ? currentThemeData?.color : '#ffffff' }}>
+    <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING ? currentThemeData?.color : gameState === AppState.GROUNDING ? 'transparent' : '#ffffff' }}>
       
       <header className="px-8 py-6 flex justify-between items-center bg-white/30 backdrop-blur-sm border-b border-white/40 sticky top-0 z-50">
         <button 
@@ -220,7 +240,14 @@ const App: React.FC = () => {
             onClick={() => requestNavigation('PROFILE')} 
             className={`flex items-center gap-2 text-sm font-bold uppercase tracking-widest transition-colors ${gameState === AppState.PROFILE ? 'text-slate-900' : 'text-slate-400 hover:text-slate-600'}`}
           >
-            <BookOpen className="w-4 h-4" /> My Journal
+            <BookOpen className="w-4 h-4" /> {currentUser.username}
+          </button>
+          <button 
+            onClick={handleLogout} 
+            className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#B8C6E6] hover:text-red-400 transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </header>
@@ -274,14 +301,14 @@ const App: React.FC = () => {
                 <ArrowLeft className="w-4 h-4" /> Pick Theme
               </button>
             </div>
-            <ProfileView onPickTheme={() => setGameState(AppState.GROUNDING)} onReturnToSandbox={() => setGameState(AppState.BUILDING)} />
+            <ProfileView onPickTheme={() => setGameState(AppState.GROUNDING)} onReturnToSandbox={() => setGameState(AppState.BUILDING)} username={currentUser.username} />
           </div>
         )}
 
         {gameState === AppState.GROUNDING && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full">
+          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full bg-transparent">
             <span className="text-slate-500 uppercase tracking-widest text-xs font-semibold mb-4">Phase I: Grounding</span>
-            <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {user.username}.</h2>
+            <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {currentUser.username}.</h2>
             <p className="text-slate-600 text-lg mb-12 leading-relaxed italic">
               "Select a mood to begin your internal architecture."
             </p>
