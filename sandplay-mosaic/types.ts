@@ -12,6 +12,7 @@ export interface User {
 
 export interface SavedSession {
   id: string;
+  userId: string;
   talismanName: string;
   talismanImageUrl: string;
   mood: string;

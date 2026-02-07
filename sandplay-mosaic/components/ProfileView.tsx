@@ -16,19 +16,20 @@ function chunkArray<T>(array: T[], chunkSize: number): T[][] {
 type ProfileViewProps = {
   onPickTheme?: () => void;
   onReturnToSandbox?: () => void;
+  username: string;
 };
 
-export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox }) => {
+export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnToSandbox, username }) => {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Ensure persistence.getAllSessions() returns SavedSession[]
-    const data = persistence.getAllSessions();
+    // Ensure persistence.getAllSessions sends the correct userId
+    const data = persistence.getAllSessions(username);
     if (data) {
         setSessions(data);
     }
-  }, []);
+  }, [username]);
 
   const handleCubeClick = (id: string) => {
     if (selectedId === id) {
@@ -64,7 +65,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onPickTheme, onReturnT
       <div className="relative w-full pt-12 px-6">
         <div className="max-w-7xl mx-auto flex justify-between items-start">
           <div>
-            <h2 className="text-5xl serif italic text-slate-900 mb-2">Your Memories</h2>
+            <h2 className="text-5xl serif italic text-slate-900 mb-2">{username}'s Journal</h2>
             <p className="text-slate-500 max-w-2xl italic text-base">
               Click on any memory cube to explore its essence.
             </p>
