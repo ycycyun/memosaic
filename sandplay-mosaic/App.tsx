@@ -10,6 +10,8 @@ import { ThemeCarousel } from './components/ThemeCarousel';
 import { persistence } from './services/persistenceService';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
 import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle } from 'lucide-react';
+// @ts-ignore
+import mosandLogo from './assets/mosand_logo_v2.svg';
 
 const App: React.FC = () => {
   // Implicit single user
@@ -205,12 +207,13 @@ const App: React.FC = () => {
     <div className="min-h-screen flex flex-col transition-colors duration-1000" style={{ backgroundColor: gameState === AppState.BUILDING || gameState === AppState.GROUNDING ? currentThemeData?.color : '#ffffff' }}>
       
       <header className="px-8 py-6 flex justify-between items-center bg-white/30 backdrop-blur-sm border-b border-white/40 sticky top-0 z-50">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-slate-900 rounded-lg text-white">
-            <Layers className="w-5 h-5" />
-          </div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">Sandplay Mosaic</h1>
-        </div>
+        <button 
+          onClick={() => requestNavigation('RESTART')} 
+          className="flex items-center gap-3 group transition-transform hover:scale-[1.02] focus:outline-none"
+          aria-label="Return to Home"
+        >
+          <img src={mosandLogo} alt="MoSand" className="h-9 w-auto object-contain drop-shadow-sm" />
+        </button>
         
         <div className="flex items-center gap-4">
           <button 
