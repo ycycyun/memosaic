@@ -1,8 +1,8 @@
-
-import { GoogleGenAI, Type } from "@google/genai";
+import Dedalus from "dedalus-labs";
 import { SandboxObject, Reframe } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+const apiKey = import.meta.env.VITE_DEDALUS_API_KEY || "";
+const client = new Dedalus({ apiKey });
 
 export async function generateReframes(objects: SandboxObject[], theme: string): Promise<Reframe[]> {
   const layoutDesc = objects.map(o => `${o.name} at (${o.x}, ${o.y})`).join(', ');
@@ -17,31 +17,18 @@ export async function generateReframes(objects: SandboxObject[], theme: string):
     3. THE POET (Abstract): Offer a metaphorical or spiritual interpretation.
     
     Keep responses brief, soothing, and insightful.
+    Return JSON ONLY as an array of 3 objects with keys: type, title, content, color.
   `;
 
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              type: { type: Type.STRING },
-              title: { type: Type.STRING },
-              content: { type: Type.STRING },
-              color: { type: Type.STRING }
-            },
-            required: ['type', 'title', 'content', 'color']
-          }
-        }
-      }
+    const completion = await client.chat.completions.create({
+      model: "openai/gpt-5.2",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.6,
     });
 
-    return JSON.parse(response.text);
+    const content = completion.choices[0]?.message?.content ?? "";
+    return JSON.parse(content);
   } catch (error) {
     console.error("Analysis Error:", error);
     return [
@@ -56,53 +43,39 @@ export async function generateSummaryItem(objects: SandboxObject[], theme: strin
   const layoutDesc = objects.map(o => o.name).join(', ');
   
   // 1. Generate a poetic name for the summary object
-  const nameResponse = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `The user placed these items in a ${theme} themed sandplay: ${layoutDesc}. Invent a single poetic name for a "talisman" or "relic" that represents the spirit of this specific combination. Return ONLY the name.`,
+  const nameCompletion = await client.chat.completions.create({
+    model: "openai/gpt-5.2",
+    messages: [
+      {
+        role: "user",
+        content: `The user placed these items in a ${theme} themed sandplay: ${layoutDesc}. Invent a single poetic name for a "talisman" or "relic" that represents the spirit of this specific combination. Return ONLY the name.`,
+      },
+    ],
+    temperature: 0.7,
   });
-  
-  const talismanName = nameResponse.text?.trim() || "The Soul's Fragment";
+
+  const talismanName = (nameCompletion.choices[0]?.message?.content ?? "").trim() || "The Soul's Fragment";
 
   // 2. Generate the image for this talisman
-  const imageResponse = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: [{ text: `A high-quality minimalist isometric 3D render of a sacred talisman called "${talismanName}". It should look like a single precious object made of materials fitting a ${theme} theme. Soft cinematic lighting, white background, masterpiece style.` }]
-    },
-    config: {
-      imageConfig: { aspectRatio: "1:1" }
-    }
+  const imageResponse = await client.images.generate({
+    prompt: `A high-quality minimalist isometric 3D render of a sacred talisman called "${talismanName}". It should look like a single precious object made of materials fitting a ${theme} theme. Soft cinematic lighting, white background, masterpiece style.`,
+    model: "openai/dall-e-3",
+    size: "1024x1024",
   });
 
-  let imageUrl = "";
-  for (const part of imageResponse.candidates[0].content.parts) {
-    if (part.inlineData) {
-      imageUrl = `data:image/png;base64,${part.inlineData.data}`;
-      break;
-    }
-  }
-
+  const imageUrl = imageResponse.data[0]?.url || "";
   return { name: talismanName, imageUrl };
 }
 
 export async function generateAssetImage(prompt: string): Promise<string | null> {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
-      contents: {
-        parts: [{ text: `A simple minimalist isometric sprite of ${prompt}. Clean white background, illustrative style, soft colors.` }]
-      },
-      config: {
-        imageConfig: { aspectRatio: "1:1" }
-      }
+    const response = await client.images.generate({
+      prompt: `A simple minimalist isometric sprite of ${prompt}. Clean white background, illustrative style, soft colors.`,
+      model: "openai/dall-e-3",
+      size: "1024x1024",
     });
 
-    for (const part of response.candidates[0].content.parts) {
-      if (part.inlineData) {
-        return `data:image/png;base64,${part.inlineData.data}`;
-      }
-    }
-    return null;
+    return response.data[0]?.url || null;
   } catch (error) {
     console.error("Image Gen Error:", error);
     return null;
