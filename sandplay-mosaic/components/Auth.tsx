@@ -1,109 +1,120 @@
-
 import React, { useState } from 'react';
-import { MuralShard } from '../types';
-import { Sparkles, Calendar } from 'lucide-react';
+import { User } from '../types';
+import { persistence } from '../services/persistenceService';
+import { Lock, User as UserIcon, ArrowRight } from 'lucide-react';
+// @ts-ignore
+import mosandLogo from '../assets/mosand_logo_v2.svg';
 
-interface MuralViewProps {
-  shards: MuralShard[];
+interface AuthProps {
+  onLogin: (user: User) => void;
 }
 
-const MuralView: React.FC<MuralViewProps> = ({ shards }) => {
-  const [flippedIds, setFlippedIds] = useState<Set<string>>(new Set());
+const Auth: React.FC<AuthProps> = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  const toggleFlip = (id: string) => {
-    const next = new Set(flippedIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setFlippedIds(next);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!username || !password) {
+      setError("Please fill in all fields.");
+      return;
+    }
+
+    if (isLogin) {
+      const result = persistence.login(username, password);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.user) {
+        onLogin(result.user);
+      }
+    } else {
+      const result = persistence.register(username, password);
+      if (result.error) {
+        setError(result.error);
+      } else if (result.user) {
+        onLogin(result.user);
+      }
+    }
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto flex flex-col gap-12 animate-in fade-in duration-1000 pb-20">
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/50 border border-white/80 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-4">
-          <Calendar className="w-3 h-3" /> The Daily Talisman Collection
+    <div className="min-h-screen flex flex-col items-center justify-center bg-stone-50 p-6 relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+          <div className="absolute top-10 left-10 w-64 h-64 bg-amber-200 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-10 right-10 w-96 h-96 bg-blue-200 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="w-full max-w-md z-10">
+        <div className="flex flex-col items-center mb-8">
+            <img src={mosandLogo} alt="MoSand" className="h-20 mb-6 drop-shadow-sm" />
+            <h2 className="text-2xl font-serif text-slate-800 text-center">
+              {isLogin ? 'Welcome Back' : 'Begin Your Journey'}
+            </h2>
+            <p className="text-slate-500 text-center mt-2 text-sm">
+              {isLogin ? 'Enter your sanctuary of memory.' : 'Create a space for your inner world.'}
+            </p>
         </div>
-        <h2 className="text-5xl serif italic text-slate-900 mb-4">A Mosaic of Days</h2>
-        <p className="text-slate-500 max-w-xl mx-auto italic">
-          Every session is distilled into a single sacred object. 
-          The color reflects your initial mood; the flip reveals your inner relic.
-        </p>
-      </div>
 
-      <div className="flex flex-wrap justify-center gap-8 px-4">
-        {shards.map((shard) => {
-          const isFlipped = flippedIds.has(shard.id);
-          return (
-            <div 
-              key={shard.id} 
-              className="group perspective-1000 aspect-square cursor-pointer w-full sm:w-64 md:w-72"
-              onClick={() => toggleFlip(shard.id)}
-            >
-              <div 
-                className={`relative w-full h-full transition-transform duration-1000 preserve-3d shadow-xl rounded-3xl animate-float ${isFlipped ? 'rotate-y-180' : 'animate-spin-3d-mural'}`}
-              >
-                
-                {/* Front Side: Pure Mood Color */}
-                <div 
-                  className="absolute inset-0 backface-hidden rounded-3xl flex items-center justify-center overflow-hidden"
-                  style={{ backgroundColor: shard.accent }}
-                >
-                  <div className="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.4)_0%,_transparent_60%)]" />
-                  <div className="relative opacity-0 group-hover:opacity-100 transition-all duration-500 translate-y-2 group-hover:translate-y-0">
-                    <div className="bg-white/20 backdrop-blur-md px-4 py-2 rounded-full border border-white/30 flex items-center gap-2 text-white text-xs font-bold tracking-widest uppercase">
-                      Reveal Spirit <Sparkles className="w-3 h-3" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Back Side: The AI Talisman */}
-                <div className="absolute inset-0 backface-hidden rotate-y-180 bg-white border border-slate-100 rounded-3xl flex flex-col items-center justify-center p-8 text-center">
-                  <div className="w-full aspect-square relative mb-6">
-                    {shard.itemImageUrl ? (
-                      <img 
-                        src={shard.itemImageUrl} 
-                        alt={shard.itemName} 
-                        className="w-full h-full object-contain drop-shadow-2xl animate-in zoom-in-75 duration-500" 
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-slate-50 rounded-2xl animate-pulse" />
-                    )}
-                  </div>
-                  <h3 className="text-xl serif italic text-slate-800 leading-tight mb-2">
-                    {shard.itemName}
-                  </h3>
-                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] border-t border-slate-100 pt-3 w-full">
-                    {shard.date} • {shard.mood}
-                  </div>
-                </div>
-
-              </div>
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-white/50 backdrop-blur-sm">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <div className="relative">
+              <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700"
+              />
             </div>
-          );
-        })}
+            
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="password"
+                placeholder={isLogin ? "Your secret key" : "Create a secret key"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-slate-700"
+              />
+            </div>
+
+            {error && (
+              <div className="p-3 bg-red-50 text-red-600 text-xs font-semibold rounded-lg flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-500 rounded-full"></span>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="mt-2 w-full py-3.5 bg-slate-900 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10 group"
+            >
+              {isLogin ? 'Enter Journal' : 'Create Account'}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-8 text-center">
+          <p className="text-slate-500 text-sm">
+            {isLogin ? "First time here?" : "Already have a space?"}
+            <button
+              onClick={() => { setIsLogin(!isLogin); setError(null); }}
+              className="ml-2 font-bold text-slate-800 hover:text-indigo-600 transition-colors underline decoration-slate-300 underline-offset-4"
+            >
+              {isLogin ? "Create account" : "Login"}
+            </button>
+          </p>
+        </div>
       </div>
-
-      <style>{`
-        .perspective-1000 { perspective: 1000px; }
-        .preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-
-        @keyframes spin-3d-mural {
-          0% { transform: rotateX(-10deg) rotateY(0deg); }
-          100% { transform: rotateX(-10deg) rotateY(360deg); }
-        }
-        .animate-spin-3d-mural { animation: spin-3d-mural 12s infinite linear; }
-        
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-        }
-        .animate-float { animation: float 4s infinite ease-in-out; }
-
-      `}</style>
     </div>
   );
 };
 
-export default MuralView;
+export default Auth;

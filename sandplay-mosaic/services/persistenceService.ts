@@ -14,10 +14,13 @@ export const persistence = {
     return newSession;
   },
 
-  // Retrieve all saved sessions (LIFO order usually preferred for history)
-  getAllSessions: (): SavedSession[] => {
+  // Retrieve all sessions for a specific user
+  getAllSessions: (userId: string): SavedSession[] => {
     const sessions: SavedSession[] = JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
-    return sessions.sort((a, b) => Number(b.id) - Number(a.id));
+    // Filter sessions by userId
+    return sessions
+      .filter(s => s.userId === userId)
+      .sort((a, b) => Number(b.id) - Number(a.id));
   },
 
   // Clear history if needed (utility)
