@@ -23,6 +23,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 }) => {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const boardViewportRef = useRef<HTMLDivElement>(null);
   const [surfaceSize, setSurfaceSize] = useState({ width: 0, height: 0 });
   
   // Zoom and pan state - 使用 Pointer Events
@@ -46,6 +47,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   const [selectedObject, setSelectedObject] = useState<string | null>(null);
   const [lastClickTime, setLastClickTime] = useState<{ [key: string]: number }>({});
   const [deleteMenuPos, setDeleteMenuPos] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredObjectId, setHoveredObjectId] = useState<string | null>(null);
 
   // Smooth entrance: track newly placed object ids for drop-in animation
   const prevObjectIdsRef = useRef<Set<string>>(new Set());
@@ -156,6 +158,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
     if (e.button !== 0) return;
 
     const target = e.target as HTMLElement;
+    if (target.closest('[data-sandbox-ui]')) return;
     if (target.closest('.sandbox-object')) return;
     if (draggingObjectId) return;
 
@@ -225,7 +228,9 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   const getGridPositionFromMouse = (clientX: number, clientY: number) => {
     if (!containerRef.current || !surfaceRef.current) return null;
     
-    const rect = containerRef.current.getBoundingClientRect();
+    const rect = boardViewportRef.current
+      ? boardViewportRef.current.getBoundingClientRect()
+      : containerRef.current.getBoundingClientRect();
     
     // Mouse in viewport coordinates
     const viewportCenterX = rect.left + rect.width / 2;
@@ -370,7 +375,9 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
           const obj = objects.find(o => o.id === objId);
           if (obj && containerRef.current) {
             const pos = ISO_MATH.toIso(obj.x, obj.y);
-            const rect = containerRef.current.getBoundingClientRect();
+            const rect = boardViewportRef.current
+              ? boardViewportRef.current.getBoundingClientRect()
+              : containerRef.current.getBoundingClientRect();
             const px = pos.x * scaleX;
             const py = pos.y * scaleY;
             
@@ -479,6 +486,13 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
   };
 
   const tray = trayStyles[activeThemeName];
+  const hoverRingColors: Record<AssetTheme, string> = {
+    Forest: '#FF3D8A',
+    'Urban Solitude': '#38BDF8',
+    'Deep Sea': '#FFD60A',
+    Sand: '#2DD4BF'
+  };
+  const hoverRingColor = hoverRingColors[activeThemeName];
   const noiseLayer = `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='${tray.noiseOpacity}'/%3E%3C/svg%3E")`;
   const surfaceGradient = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.35), transparent 55%), radial-gradient(circle at 70% 70%, rgba(0,0,0,0.12), transparent 55%)`;
 
@@ -506,7 +520,10 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
       }}
     >
       {/* Zoom controls */}
-      <div className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+      <div
+        className="absolute top-4 right-4 z-50 flex flex-col gap-2 bg-white/80 backdrop-blur-sm rounded-lg p-2 shadow-lg"
+        data-sandbox-ui
+      >
         <button
           onClick={() => setZoom(Math.min(2.5, zoom + 0.2))}
           className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded transition-colors text-slate-700 font-bold"
@@ -537,7 +554,10 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
       </div>
 
       {/* Instructions */}
-      <div className="absolute bottom-20 left-4 z-50 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg text-xs text-slate-600">
+      <div
+        className="absolute bottom-20 left-4 z-50 bg-white/80 backdrop-blur-sm rounded-lg px-4 py-2 shadow-lg text-xs text-slate-600"
+        data-sandbox-ui
+      >
         <div className="font-medium mb-1">Controls:</div>
         <div>• Scroll to zoom in/out</div>
         <div>• Press & drag canvas to pan</div>
@@ -547,6 +567,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 
       {/* Board Viewport - Rounded mask/window with perspective for depth */}
       <div 
+        ref={boardViewportRef}
         className="board-viewport absolute"
         style={{
           width: '55rem',
@@ -557,7 +578,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
           borderRadius: '20px',
           overflow: 'hidden',
           backgroundColor: 'transparent',
-          pointerEvents: 'none',
+          pointerEvents: 'auto',
           // Perspective creates depth: near objects appear larger, far objects smaller
           perspective: '1400px',
           perspectiveOrigin: '50% 42%'
@@ -602,7 +623,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
 
           {/* Objects layer - same level as surface but rendered separately to avoid perspective */}
           <div
-            className="absolute top-0 left-0 w-full h-full rounded-md overflow-visible pointer-events-none"
+            className="absolute top-0 left-0 w-full h-full rounded-md overflow-visible pointer-events-auto"
           >
             <div
               className="relative w-full h-full"
@@ -613,6 +634,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                 const px = pos.x * scaleX;
                 const py = pos.y * scaleY;
                 const objectSize = Math.min(gridSizeX, gridSizeY) * 4.2;
+                const hitboxSize = objectSize * 2;
                 const isBeingDragged = draggingObjectId === obj.id && hasMoved;
                 const isRecentlyPlaced = recentlyPlacedIds.has(obj.id);
                 
@@ -628,11 +650,13 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                     onPointerMove={handleObjectPointerMove}
                     onPointerUp={handleObjectPointerUp}
                     onPointerCancel={handleObjectPointerCancel}
+                    onPointerEnter={() => setHoveredObjectId(obj.id)}
+                    onPointerLeave={() => setHoveredObjectId(prev => (prev === obj.id ? null : prev))}
                     style={{
                       left: `${originX + px}px`,
                       top: `${originY + py}px`,
-                      width: `${objectSize}px`,
-                      height: 'auto',
+                      width: `${hitboxSize}px`,
+                      height: `${hitboxSize}px`,
                       zIndex: isBeingDragged ? 9999 : obj.x + obj.y + 10,
                       transform: `translate(-50%, -50%) translate(0, -${20 * scaleY}px)`,
                       pointerEvents: 'auto',
@@ -645,9 +669,14 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                     }}
                   >
                     <div
-                      className={`flex flex-col items-center justify-end h-full origin-bottom ${
+                      className={`absolute left-1/2 top-1/2 flex flex-col items-center justify-end origin-bottom ${
                         isRecentlyPlaced ? 'sandbox-object-place-in' : ''
                       }`}
+                      style={{
+                        width: `${objectSize}px`,
+                        height: `${objectSize}px`,
+                        transform: 'translate(-50%, -50%)'
+                      }}
                     >
                       {obj.imageUrl ? (
                         <img 
@@ -663,6 +692,19 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
                         </div>
                       )}
                       <div className="w-8 h-2 bg-black/10 blur-sm rounded-full -mb-1" />
+                      <div
+                        className="absolute rounded-full pointer-events-none transition-all duration-200"
+                        style={{
+                          width: '18px',
+                          height: '18px',
+                          left: '50%',
+                          bottom: '6px',
+                          transform: 'translateX(-50%)',
+                          backgroundColor: hoverRingColor,
+                          opacity: hoveredObjectId === obj.id ? 0.65 : 0,
+                          boxShadow: `0 0 10px ${hoverRingColor}`
+                        }}
+                      />
                     </div>
                   </div>
                 );
@@ -677,6 +719,7 @@ const IsometricSandbox: React.FC<IsometricSandboxProps> = ({
       {selectedObject && deleteMenuPos && (
         <div
           className="fixed z-[60] animate-in fade-in zoom-in duration-200"
+          data-sandbox-ui
           style={{
             left: `${deleteMenuPos.x}px`,
             top: `${deleteMenuPos.y}px`,
