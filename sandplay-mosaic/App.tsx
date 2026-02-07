@@ -6,6 +6,7 @@ import AssetPalette from './components/AssetPalette';
 import IsometricSandbox from './components/IsometricSandbox';
 import MuralView from './components/MuralView';
 import { ProfileView } from './components/ProfileView'; // Confirmed named import is correct
+import { ThemeCarousel } from './components/ThemeCarousel';
 import { persistence } from './services/persistenceService';
 import { generateReframes, generateSummaryItem } from './services/geminiService';
 import { ChevronRight, Globe, Layers, Sparkles, Wind, ArrowLeft, Loader2, Bookmark, BookOpen, AlertCircle, AlertTriangle } from 'lucide-react';
@@ -261,29 +262,13 @@ const App: React.FC = () => {
         )}
 
         {gameState === AppState.GROUNDING && (
-          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-3xl mx-auto">
+          <div className="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto w-full">
             <span className="text-slate-500 uppercase tracking-widest text-xs font-semibold mb-4">Phase I: Grounding</span>
             <h2 className="text-5xl serif italic text-slate-900 mb-6">Choose your atmosphere, {user.username}.</h2>
             <p className="text-slate-600 text-lg mb-12 leading-relaxed italic">
               "Select a mood to begin your internal architecture."
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
-              {THEMES.map((t) => (
-                <button
-                  key={t.name}
-                  onClick={() => handleStart(t.name as AssetTheme)}
-                  className="group relative overflow-hidden bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-2xl transition-all duration-500 text-left"
-                >
-                  <div className="w-12 h-12 rounded-2xl mb-6 transition-transform group-hover:scale-110 flex items-center justify-center text-white" style={{ backgroundColor: t.accent }}>
-                    {t.name === 'Forest' ? <Wind /> : t.name === 'Deep Sea' ? <Sparkles /> : <Globe />}
-                  </div>
-                  <h3 className="text-2xl serif font-semibold text-slate-800 mb-2">{t.name}</h3>
-                  <div className="flex items-center gap-2 text-sm text-slate-500 font-medium">
-                    Enter Space <ChevronRight className="w-4 h-4" />
-                  </div>
-                </button>
-              ))}
-            </div>
+            <ThemeCarousel onSelectTheme={handleStart} />
           </div>
         )}
 

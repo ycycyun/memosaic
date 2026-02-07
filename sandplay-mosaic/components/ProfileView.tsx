@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { persistence } from '../services/persistenceService';
 import { SavedSession } from '../types'; // Ensure this matches your file path
-import { Sparkles } from 'lucide-react';
+import { Sparkles, X } from 'lucide-react';
 
 // Helper function to chunk array for row-based rendering
 function chunkArray<T>(array: T[], chunkSize: number): T[][] {
@@ -33,6 +33,23 @@ export const ProfileView: React.FC = () => {
     }
   };
 
+  const handleClearHistory = () => {
+    if (confirm('Are you sure you want to delete all your memory history? This cannot be undone.')) {
+      persistence.clearHistory();
+      setSessions([]);
+    }
+  };
+
+  const handleDeleteMemory = (id: string, event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (confirm('Delete this memory? This action cannot be undone.')) {
+      const updatedSessions = sessions.filter(session => session.id !== id);
+      setSessions(updatedSessions);
+      localStorage.setItem('sandplay_sessions', JSON.stringify(updatedSessions));
+      setSelectedId(null);
+    }
+  };
+
   // Determine chunk size for desktop layout (lg:grid-cols-4)
   const desktopChunkSize = 4; 
 
@@ -40,11 +57,21 @@ export const ProfileView: React.FC = () => {
     <div className="w-full min-h-screen flex flex-col gap-12 animate-in fade-in duration-1000 pb-20 bg-white">
       {/* Simple Header */}
       <div className="relative w-full pt-12 px-6">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-5xl serif italic text-slate-900 mb-2">Your Memories</h2>
-          <p className="text-slate-500 max-w-2xl italic text-base">
-            Click on any memory cube to explore its essence.
-          </p>
+        <div className="max-w-7xl mx-auto flex justify-between items-start">
+          <div>
+            <h2 className="text-5xl serif italic text-slate-900 mb-2">Your Memories</h2>
+            <p className="text-slate-500 max-w-2xl italic text-base">
+              Click on any memory cube to explore its essence.
+            </p>
+          </div>
+          {sessions.length > 0 && (
+            <button
+              onClick={handleClearHistory}
+              className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700 border border-red-300 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              Clear History
+            </button>
+          )}
         </div>
       </div>
 
@@ -82,6 +109,17 @@ export const ProfileView: React.FC = () => {
                             zIndex: isSelected ? 50 : 1
                           }}
                         >
+                          {/* Delete button - appears when cube is clicked, positioned above cube */}
+                          {isSelected && (
+                            <button
+                              onClick={(e) => handleDeleteMemory(session.id, e)}
+                              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full text-white rounded-full p-1 z-50 mb-1"
+                              style={{ backgroundColor: session.accent }}
+                              title="Delete this memory"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
                           {/* Wrapper */}
                           <div
                             className={`w-full h-full transition-all duration-500 ease-in-out ${isSelected ? 'scale-150' : ''}`}
