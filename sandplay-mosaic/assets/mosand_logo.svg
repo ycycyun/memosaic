@@ -1,0 +1,10 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="mosaic" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="20" height="20" fill="#fdfbf7"/>
+      <path d="M0 0l20 0l0 20l-20 0z" fill="none" stroke="#d6cfc7" stroke-width="1"/>
+      <path d="M5 5l10 10M15 5l-10 10" stroke="#e8e4dc" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="'Playfair Display', serif" font-weight="bold" font-size="40" fill="url(#mosaic)" stroke="#2c2c2c" stroke-width="1.5">MoSand</text>
+</svg>

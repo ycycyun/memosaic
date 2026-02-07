@@ -1,0 +1,13 @@
+<svg width="200" height="60" viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <pattern id="colorfulMosaic" x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(15)">
+        <rect x="0" y="0" width="12" height="12" fill="#E6D5B8"/> <!-- Sand Muted -->
+        <rect x="12" y="0" width="12" height="12" fill="#B8C6E6"/> <!-- Blue Muted -->
+        <rect x="0" y="12" width="12" height="12" fill="#CDE6B8"/> <!-- Green Muted -->
+        <rect x="12" y="12" width="12" height="12" fill="#E6B8B8"/> <!-- Red Muted -->
+        <path d="M6 0 L6 24 M18 0 L18 24 M0 6 L24 6 M0 18 L24 18" stroke="#FFFFFF" stroke-opacity="0.5" stroke-width="0.5"/>
+    </pattern>
+  </defs>
+  <!-- Thinner stroke (0.8) for delicacy and softer mosaic fill -->
+  <text x="50%" y="58%" dominant-baseline="middle" text-anchor="middle" font-family="'Didot', 'Playfair Display', serif" font-weight="900" font-size="52" fill="url(#colorfulMosaic)" stroke="#6D4C41" stroke-width="0.8" letter-spacing="1">MoSand</text>
+</svg>
