@@ -97,33 +97,78 @@ export async function generateReframes(objects: SandboxObject[], theme: string):
   }
 }
 
-export async function generateSummaryItem(objects: SandboxObject[], theme: string): Promise<{ name: string; imageUrl: string }> {
+export async function generateSummaryItem(objects: SandboxObject[], theme: string): Promise<{ name: string; imageUrl: string; accent: string; mood: string }> {
   const layoutDesc = objects.map(o => o.name).join(', ');
   
-  // 1. Generate a poetic name for the summary object
-  const nameCompletion = await client.chat.completions.create({
-    model: "openai/gpt-5.2",
-    messages: [
+  // 1. Generate poetic name, emotion analysis, and color
+  try {
+    const analysisCompletion = await client.chat.completions.create({
+      model: "openai/gpt-5.2",
+      messages: [
+        {
+          role: "user",
+          content: `
+            The user placed these items in a ${theme} themed sandplay: ${layoutDesc}.
+            
+            Tasks:
+            1. Invent a single poetic name for a "talisman" or "relic" that represents the spirit of this specific combination.
+            2. Analyze the potential emotion/mood of the user based on the layout and objects.
+            3. Select a pure hex color code that best represents this emotion based on an expanded emotion color wheel. Be creative and nuanced with the palette.
+            Examples:
+            - Joy: Yellow, Gold, Amber
+            - Sadness: Blue, Indigo, Slate
+            - Anger: Red, Crimson, Maroon
+            - Trust/Healing: Green, Emerald, Mint
+            - Fear/Anxiety: Purple, Violet, Black
+            - Love/Compassion: Pink, Rose, Magenta
+            - Surprise/Wonder: Cyan, Sky Blue, Electric Blue
+            - Anticipation/Energy: Orange, Coral, Tangerine
+            - Serenity/Peace: Teal, Turquoise, Aqua
+            - Mystery/Magic: Deep Purple, Midnight Blue
+            - Grounding/Stability: Brown, Earth, Ochre
+            - Confusion/Ambiguity: Grey, Lavender, Beige
+            
+            IMPORTANT: Do NOT simply pick the color of the theme (e.g. do not just pick green for Forest or blue for Sea). Look deeper at the OBJECTS and their emotional meaning. If a user places a "skull" in a "Forest", the emotion might be Fear (Purple/Black), not Green. If they place a "sun" in "Deep Sea", it might be Hope (Yellow), not Blue.
+            
+            Return valid JSON ONLY with these keys:
+            {
+              "name": "string",
+              "emotion": "string",
+              "color": "#hexcode"
+            }
+          `,
+        },
+      ],
+      temperature: 0.7,
+    });
+
+    const content = analysisCompletion.choices[0]?.message?.content || "{}";
+    // Attempt to parse JSON, finding the first { and last }
+    const jsonStr = content.substring(content.indexOf('{'), content.lastIndexOf('}') + 1);
+    const result = JSON.parse(jsonStr || '{"name": "The Soul Fragment", "emotion": "Calm", "color": "#64748b"}');
+    
+    const talismanName = result.name || "The Soul Fragment";
+    const emotion = result.emotion || "Calm";
+    const color = result.color || "#64748b";
+
+    // 2. Generate the image for this talisman
+    const imageUrl = await generateEmotionalImage(
       {
-        role: "user",
-        content: `The user placed these items in a ${theme} themed sandplay: ${layoutDesc}. Invent a single poetic name for a "talisman" or "relic" that represents the spirit of this specific combination. Return ONLY the name.`,
+        title: talismanName,
+        description: `${theme} sandplay talisman`,
       },
-    ],
-    temperature: 0.7,
-  });
+      emotion
+    );
 
-  const talismanName = (nameCompletion.choices[0]?.message?.content ?? "").trim() || "The Soul's Fragment";
+    return { name: talismanName, imageUrl, accent: color, mood: emotion };
 
-  // 2. Generate the image for this talisman
-  const imageUrl = await generateEmotionalImage(
-    {
-      title: talismanName,
-      description: `${theme} sandplay talisman`,
-    },
-    null
-  );
-
-  return { name: talismanName, imageUrl };
+  } catch (err) {
+    console.error("Summary Generation Failed:", err);
+    // Fallback
+    const fallbackName = "The Silent Echo";
+    const imageUrl = await generateEmotionalImage({ title: fallbackName, description: "Unknown talisman" }, null);
+    return { name: fallbackName, imageUrl, accent: "#94a3b8", mood: "Reflection" };
+  }
 }
 
 export async function generateAssetImage(prompt: string): Promise<string | null> {
